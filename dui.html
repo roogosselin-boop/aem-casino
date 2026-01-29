@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRIVE OR DUI | AEM Casino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0a0a12;--card:#12121a;--text:#fff;--muted:#666;--red:#e53935;--green:#4caf50;--yellow:#ffc107;--orange:#ff9800}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{max-width:500px;margin:0 auto;padding:15px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:12px 0;position:relative}
+        .back-btn{position:absolute;top:12px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Russo One',sans-serif;font-size:2rem;color:var(--orange);text-shadow:0 0 20px rgba(255,152,0,.5)}
+        .tagline{font-size:.65rem;letter-spacing:.25em;color:var(--yellow);text-transform:uppercase}
+        .stats-bar{display:flex;justify-content:center;gap:25px;padding:10px;margin:10px 0;background:var(--card);border:1px solid rgba(255,152,0,.2);border-radius:10px}
+        .stat{text-align:center}
+        .stat-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+        .stat-value{font-family:'Russo One',sans-serif;font-size:1.2rem;color:var(--orange)}
+        .stat-value.bankroll{color:var(--text)}
+        
+        .game-screen{background:#1a3518;border:2px solid rgba(255,152,0,.3);border-radius:15px;overflow:hidden;margin:10px 0;position:relative;height:400px}
+        #gameCanvas{width:100%;height:100%;display:block}
+        
+        .overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.9);opacity:0;pointer-events:none;transition:opacity .3s;z-index:10}
+        .overlay.show{opacity:1;pointer-events:auto}
+        .overlay-icon{font-size:4rem;margin-bottom:10px}
+        .overlay-title{font-family:'Russo One',sans-serif;font-size:2rem;margin-bottom:5px}
+        .overlay-title.win{color:var(--green)}
+        .overlay-title.lose{color:var(--red)}
+        .overlay-sub{font-size:1rem;color:#ccc}
+        
+        .current-info{text-align:center;padding:15px;background:var(--card);border-radius:10px;margin-bottom:10px}
+        .current-bar{font-family:'Russo One',sans-serif;font-size:1.5rem;color:var(--orange)}
+        .current-mult{font-size:1rem;color:var(--green);margin-top:5px}
+        
+        .controls{display:flex;gap:12px;justify-content:center;padding:10px 0}
+        .btn{padding:12px 25px;font-family:'Russo One',sans-serif;font-size:.85rem;border:none;border-radius:10px;cursor:pointer;transition:all .3s}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        .btn-drive{background:linear-gradient(135deg,var(--orange),#e65100);color:#fff;flex:1}
+        .btn-cashout{background:linear-gradient(135deg,var(--green),#2e7d32);color:#fff;flex:1}
+        .btn:hover:not(:disabled){transform:translateY(-2px)}
+        
+        .bet-section{text-align:center;padding:20px;background:var(--card);border-radius:12px}
+        .bet-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+        .bet-input-wrap{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+        .bet-input{width:120px;padding:10px;font-family:'Russo One',sans-serif;font-size:1.1rem;text-align:center;background:var(--bg);border:2px solid rgba(255,152,0,.3);border-radius:8px;color:var(--text);outline:none}
+        .quick-bets{display:flex;gap:6px;justify-content:center;margin-bottom:15px}
+        .quick-bet{padding:5px 12px;font-size:.75rem;background:var(--bg);border:1px solid rgba(255,152,0,.2);border-radius:5px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--orange);color:var(--orange)}
+        .btn-start{background:linear-gradient(135deg,var(--orange),#e65100);color:#fff;padding:12px 40px}
+        
+        .result{text-align:center;padding:12px 20px;border-radius:10px;margin:10px 0;font-weight:600}
+        .result-win{background:rgba(76,175,80,.2);border:1px solid var(--green);color:var(--green)}
+        .result-lose{background:rgba(229,57,53,.2);border:1px solid var(--red);color:var(--red)}
+        
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">DRIVE OR DUI</h1>
+        <p class="tagline">Bar Hop at Your Own Risk</p>
+    </header>
+    
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Bet</div><div class="stat-value" id="betDisplay">$0</div></div>
+        <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="lastWin">-</div></div>
+    </div>
+    
+    <div id="betSection" class="bet-section">
+        <div class="bet-label">Place Your Bet</div>
+        <div class="bet-input-wrap">
+            <span style="font-size:1.2rem;color:var(--orange)">$</span>
+            <input type="number" class="bet-input" id="betInput" value="50" min="10">
+        </div>
+        <div class="quick-bets">
+            <button class="quick-bet" data-v="25">$25</button>
+            <button class="quick-bet" data-v="50">$50</button>
+            <button class="quick-bet" data-v="100">$100</button>
+        </div>
+        <button class="btn btn-start" id="startBtn">🚗 Start Driving</button>
+    </div>
+    
+    <div id="gameSection" class="hidden">
+        <div class="game-screen">
+            <canvas id="gameCanvas"></canvas>
+            <div class="overlay" id="overlay">
+                <div class="overlay-icon" id="overlayIcon">🚨</div>
+                <div class="overlay-title" id="overlayTitle">DUI!</div>
+                <div class="overlay-sub" id="overlaySub">You got pulled over!</div>
+            </div>
+        </div>
+        
+        <div class="current-info" id="currentInfo">
+            <div class="current-bar" id="currentBar">Starting...</div>
+            <div class="current-mult" id="currentMult">Drive to Bar 1 for 1.45x</div>
+        </div>
+        
+        <div class="controls" id="controls">
+            <button class="btn btn-drive" id="driveBtn">🚗 Drive to Bar 1</button>
+            <button class="btn btn-cashout hidden" id="cashoutBtn">💰 Cash Out</button>
+        </div>
+        
+        <div id="resultArea" class="result hidden"></div>
+        <div class="controls hidden" id="againControls">
+            <button class="btn btn-start" id="againBtn">Play Again</button>
+        </div>
+    </div>
+</div>
+<script>
+const KEY='prestige_casino_bankroll';
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+
+const MULTS=[1.45,2.10,3.05,4.40,6.40];
+const DUI_CHANCE=0.40;
+
+let W=100, H=100;
+let scrollY=0;
+let barY=200;
+let showBar=true;
+let copVisible=false;
+let copY=0;
+let driving=false;
+let gameOver=false;
+let currentBar=0;
+let targetBar=1;
+let bet=0;
+let bankroll=1000;
+let drivePhase=0;
+let frameCount=0;
+let willGetDUI=false;
+let animationId=null;
+
+const E={
+    bankroll:document.getElementById('bankroll'),
+    betDisplay:document.getElementById('betDisplay'),
+    lastWin:document.getElementById('lastWin'),
+    betInput:document.getElementById('betInput'),
+    betSection:document.getElementById('betSection'),
+    gameSection:document.getElementById('gameSection'),
+    currentBar:document.getElementById('currentBar'),
+    currentMult:document.getElementById('currentMult'),
+    overlay:document.getElementById('overlay'),
+    overlayIcon:document.getElementById('overlayIcon'),
+    overlayTitle:document.getElementById('overlayTitle'),
+    overlaySub:document.getElementById('overlaySub'),
+    controls:document.getElementById('controls'),
+    driveBtn:document.getElementById('driveBtn'),
+    cashoutBtn:document.getElementById('cashoutBtn'),
+    resultArea:document.getElementById('resultArea'),
+    againControls:document.getElementById('againControls'),
+    startBtn:document.getElementById('startBtn'),
+    againBtn:document.getElementById('againBtn')
+};
+
+function load(){bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,bankroll.toString());}
+function updateUI(){E.bankroll.textContent='$'+bankroll.toLocaleString();}
+
+function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    W=canvas.width=rect.width;
+    H=canvas.height=rect.height;
+}
+
+function drawBar(num, y){
+    if(y < -100 || y > H + 50) return;
+    
+    const bw=80, bh=60;
+    const bx=W*0.72;
+    
+    // Parking lot
+    ctx.fillStyle='#2a2a2a';
+    ctx.fillRect(bx-10, y+bh-10, bw+20, 25);
+    
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.fillRect(bx+4, y+4, bw, bh);
+    
+    // Building
+    ctx.fillStyle='#4a3525';
+    ctx.fillRect(bx, y, bw, bh);
+    
+    // Roof
+    ctx.fillStyle='#2d1f15';
+    ctx.beginPath();
+    ctx.moveTo(bx-8, y);
+    ctx.lineTo(bx+bw/2, y-18);
+    ctx.lineTo(bx+bw+8, y);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Neon sign
+    ctx.fillStyle='#ff3d00';
+    ctx.fillRect(bx+10, y+8, bw-20, 16);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 10px Russo One';
+    ctx.textAlign='center';
+    ctx.fillText('BAR '+num, bx+bw/2, y+20);
+    ctx.textAlign='left';
+    
+    // Windows
+    ctx.fillStyle='#ffcc00';
+    ctx.fillRect(bx+8, y+30, 16, 20);
+    ctx.fillRect(bx+bw-24, y+30, 16, 20);
+    
+    // Glow
+    ctx.fillStyle='rgba(255,200,0,0.2)';
+    ctx.beginPath();
+    ctx.arc(bx+16, y+40, 20, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(bx+bw-16, y+40, 20, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Door
+    ctx.fillStyle='#1a1208';
+    ctx.fillRect(bx+bw/2-8, y+32, 16, 28);
+    
+    // Beer
+    ctx.font='18px sans-serif';
+    ctx.fillText('🍺', bx+bw-20, y+bh-6);
+}
+
+function drawCar(x, y){
+    ctx.save();
+    ctx.translate(x, y);
+    
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(2, 2, 18, 9, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Body
+    ctx.fillStyle='#d32f2f';
+    ctx.fillRect(-16, -28, 32, 56);
+    
+    // Roof
+    ctx.fillStyle='#b71c1c';
+    ctx.fillRect(-12, -16, 24, 28);
+    
+    // Windshield
+    ctx.fillStyle='#81d4fa';
+    ctx.fillRect(-10, -24, 20, 12);
+    
+    // Rear window
+    ctx.fillStyle='#81d4fa';
+    ctx.fillRect(-8, 6, 16, 8);
+    
+    // Headlights
+    ctx.fillStyle='#fff9c4';
+    ctx.fillRect(-12, -28, 8, 4);
+    ctx.fillRect(4, -28, 8, 4);
+    
+    // Taillights
+    ctx.fillStyle='#ff1744';
+    ctx.fillRect(-12, 24, 7, 4);
+    ctx.fillRect(5, 24, 7, 4);
+    
+    ctx.restore();
+}
+
+function drawCop(y){
+    ctx.save();
+    ctx.translate(W*0.5, y);
+    
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(2, 2, 20, 10, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Body
+    ctx.fillStyle='#1a237e';
+    ctx.fillRect(-18, -30, 36, 60);
+    
+    // Stripe
+    ctx.fillStyle='#fff';
+    ctx.fillRect(-18, -4, 36, 6);
+    
+    // Roof
+    ctx.fillStyle='#0d1657';
+    ctx.fillRect(-12, -18, 24, 30);
+    
+    // Windshield
+    ctx.fillStyle='#81d4fa';
+    ctx.fillRect(-10, -26, 20, 12);
+    
+    // Lights
+    const flash = Date.now() % 400 < 200;
+    ctx.fillStyle = flash ? '#f44336' : '#2196f3';
+    ctx.fillRect(-14, -34, 12, 5);
+    ctx.fillStyle = flash ? '#2196f3' : '#f44336';
+    ctx.fillRect(2, -34, 12, 5);
+    
+    // Glow
+    ctx.fillStyle = flash ? 'rgba(244,67,54,0.4)' : 'rgba(33,150,243,0.4)';
+    ctx.beginPath();
+    ctx.arc(-8, -31, 22, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = flash ? 'rgba(33,150,243,0.4)' : 'rgba(244,67,54,0.4)';
+    ctx.beginPath();
+    ctx.arc(8, -31, 22, 0, Math.PI*2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+function draw(){
+    // Grass
+    ctx.fillStyle='#1a3518';
+    ctx.fillRect(0, 0, W, H);
+    
+    // Darker patches
+    ctx.fillStyle='#152e13';
+    for(let i=0; i<6; i++){
+        ctx.beginPath();
+        ctx.ellipse((i*87+30)%W, (i*73+50)%H, 35, 20, 0, 0, Math.PI*2);
+        ctx.fill();
+    }
+    
+    // Sidewalks
+    ctx.fillStyle='#5a5a5a';
+    ctx.fillRect(W*0.3, 0, 10, H);
+    ctx.fillRect(W*0.7-10, 0, 10, H);
+    
+    // Road
+    ctx.fillStyle='#2a2a2a';
+    ctx.fillRect(W*0.3+10, 0, W*0.4-20, H);
+    
+    // Road edges
+    ctx.fillStyle='#fff';
+    ctx.fillRect(W*0.3+10, 0, 3, H);
+    ctx.fillRect(W*0.7-13, 0, 3, H);
+    
+    // Dashed center line
+    ctx.fillStyle='#ffc107';
+    const dashLen=35, gapLen=25;
+    const offset = scrollY % (dashLen+gapLen);
+    for(let y = -dashLen + offset; y < H; y += dashLen+gapLen){
+        ctx.fillRect(W*0.5-2, y, 4, dashLen);
+    }
+    
+    // Street lamps
+    const lampSpace = 100;
+    const lampOff = scrollY % lampSpace;
+    ctx.fillStyle='#444';
+    for(let y = -20 + lampOff; y < H+40; y += lampSpace){
+        ctx.fillRect(W*0.22, y, 4, 35);
+        ctx.fillStyle='#ffd93d';
+        ctx.beginPath();
+        ctx.arc(W*0.22+2, y, 8, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle='#444';
+    }
+    
+    // Bar
+    if(showBar){
+        drawBar(targetBar, barY);
+    }
+    
+    // Player car
+    drawCar(W*0.5, H*0.65);
+    
+    // Cop
+    if(copVisible){
+        drawCop(H + 60 - copY);
+    }
+}
+
+function startGame(){
+    bet = parseInt(E.betInput.value) || 0;
+    if(bet < 10) return alert('Min $10');
+    if(bet > bankroll) return alert('Not enough');
+    
+    bankroll -= bet;
+    currentBar = 0;
+    targetBar = 1;
+    scrollY = 0;
+    copVisible = false;
+    copY = 0;
+    driving = false;
+    gameOver = false;
+    showBar = true;
+    drivePhase = 0;
+    frameCount = 0;
+    willGetDUI = false;
+    
+    save();
+    updateUI();
+    
+    E.betDisplay.textContent = '$'+bet;
+    E.betSection.classList.add('hidden');
+    E.gameSection.classList.remove('hidden');
+    E.overlay.classList.remove('show');
+    E.controls.classList.remove('hidden');
+    E.driveBtn.classList.remove('hidden');
+    E.driveBtn.disabled = false;
+    E.cashoutBtn.classList.add('hidden');
+    E.resultArea.classList.add('hidden');
+    E.againControls.classList.add('hidden');
+    
+    E.currentBar.textContent = 'Ready to Roll 🚗';
+    E.currentMult.textContent = 'Drive to Bar 1 for 1.45x';
+    E.driveBtn.textContent = '🚗 Drive to Bar 1';
+    
+    resize();
+    barY = H * 0.55;
+    draw();
+}
+
+function gameLoop(){
+    frameCount++;
+    scrollY += 5;
+    
+    if(drivePhase === 0){
+        // Bar scrolls down off screen
+        barY += 6;
+        if(barY > H + 100){
+            drivePhase = 1;
+            showBar = false;
+            frameCount = 0;
+        }
+    }
+    else if(drivePhase === 1){
+        // Empty road
+        if(frameCount > 50){
+            drivePhase = 2;
+            showBar = true;
+            barY = -100;
+            frameCount = 0;
+        }
+    }
+    else if(drivePhase === 2){
+        // New bar scrolls in
+        barY += 5;
+        
+        if(willGetDUI && barY > 20 && !copVisible){
+            copVisible = true;
+        }
+        
+        if(copVisible){
+            copY += 8;
+            if(copY > 180){
+                showDUI();
+                return;
+            }
+        }
+        
+        const stopY = H * 0.55;
+        if(barY >= stopY){
+            barY = stopY;
+            if(!willGetDUI || !copVisible){
+                arrivedAtBar();
+                return;
+            }
+        }
+    }
+    
+    draw();
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+function driveToNextBar(){
+    if(driving || gameOver) return;
+    
+    driving = true;
+    scrollY = 0;
+    copVisible = false;
+    copY = 0;
+    drivePhase = 0;
+    frameCount = 0;
+    willGetDUI = Math.random() < DUI_CHANCE;
+    
+    E.driveBtn.disabled = true;
+    E.cashoutBtn.disabled = true;
+    
+    gameLoop();
+}
+
+function arrivedAtBar(){
+    if(animationId) cancelAnimationFrame(animationId);
+    animationId = null;
+    
+    currentBar++;
+    targetBar = currentBar + 1;
+    driving = false;
+    showBar = true;
+    
+    E.currentBar.textContent = 'At Bar ' + currentBar + ' 🍺';
+    E.currentMult.textContent = 'Current: ' + MULTS[currentBar-1].toFixed(2) + 'x ($' + Math.floor(bet * MULTS[currentBar-1]) + ')';
+    
+    E.driveBtn.disabled = false;
+    E.cashoutBtn.disabled = false;
+    E.cashoutBtn.classList.remove('hidden');
+    
+    if(currentBar >= 5){
+        cashOut();
+    } else {
+        E.driveBtn.textContent = '🚗 Drive to Bar ' + (currentBar + 1);
+    }
+    
+    draw();
+}
+
+function showDUI(){
+    if(animationId) cancelAnimationFrame(animationId);
+    animationId = null;
+    
+    gameOver = true;
+    driving = false;
+    
+    E.overlayIcon.textContent = '🚨';
+    E.overlayTitle.textContent = 'DUI!';
+    E.overlayTitle.className = 'overlay-title lose';
+    E.overlaySub.textContent = 'You got pulled over!';
+    E.overlay.classList.add('show');
+    
+    E.controls.classList.add('hidden');
+    E.resultArea.className = 'result result-lose';
+    E.resultArea.textContent = '🚨 Busted! Lost $' + bet;
+    E.resultArea.classList.remove('hidden');
+    E.againControls.classList.remove('hidden');
+    
+    E.lastWin.textContent = '-$' + bet;
+    E.lastWin.style.color = '#e53935';
+}
+
+function cashOut(){
+    gameOver = true;
+    const mult = MULTS[currentBar-1];
+    const winnings = Math.floor(bet * mult);
+    bankroll += winnings;
+    save();
+    updateUI();
+    
+    E.overlayIcon.textContent = '🎉';
+    E.overlayTitle.textContent = 'Cashed Out!';
+    E.overlayTitle.className = 'overlay-title win';
+    E.overlaySub.textContent = '$' + winnings + ' (' + mult.toFixed(2) + 'x)';
+    E.overlay.classList.add('show');
+    
+    E.controls.classList.add('hidden');
+    E.resultArea.className = 'result result-win';
+    E.resultArea.textContent = '🎉 Won $' + winnings + ' (+$' + (winnings-bet) + ' profit)';
+    E.resultArea.classList.remove('hidden');
+    E.againControls.classList.remove('hidden');
+    
+    E.lastWin.textContent = '+$' + (winnings-bet);
+    E.lastWin.style.color = '#4caf50';
+}
+
+function reset(){
+    if(animationId) cancelAnimationFrame(animationId);
+    animationId = null;
+    E.gameSection.classList.add('hidden');
+    E.betSection.classList.remove('hidden');
+}
+
+E.startBtn.onclick = startGame;
+E.againBtn.onclick = reset;
+E.driveBtn.onclick = driveToNextBar;
+E.cashoutBtn.onclick = cashOut;
+document.querySelectorAll('.quick-bet').forEach(b => b.onclick = () => E.betInput.value = b.dataset.v);
+window.onresize = () => { resize(); if(!driving) draw(); };
+
+load();
+updateUI();
+</script>
+</body>
+</html>

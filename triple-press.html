@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRIPLE PRESS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--gold:#D4AF37;--gold-light:#F4D03F;--gold-dark:#B8860B;--bg:#0A0A0F;--card:#12121A;--elevated:#1A1A25;--text:#FAFAFA;--muted:#A0A0B0;--red:#C41E3A;--success:#2ECC71;--danger:#E74C3C}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:15px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:15px 0;position:relative}
+        .back-btn{position:absolute;top:15px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,5vw,2.8rem);font-weight:700;background:linear-gradient(135deg,var(--gold-light),var(--gold),var(--gold-dark));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .tagline{font-size:.7rem;letter-spacing:.3em;color:var(--muted);text-transform:uppercase}
+        .help-link{position:absolute;top:15px;right:0;color:var(--gold);font-size:.8rem;cursor:pointer}
+        .stats-bar{display:flex;justify-content:center;gap:30px;padding:12px;margin:8px 0;background:rgba(26,26,37,.8);border:1px solid rgba(212,175,55,.2);border-radius:10px}
+        .stat{text-align:center}
+        .stat-label{font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+        .stat-value{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:600;color:var(--gold)}
+        .stat-value.bankroll{color:var(--text)}
+        .game-area{flex:1;display:flex;flex-direction:column;align-items:center;gap:15px;padding:10px 0}
+        .level-track{display:flex;gap:6px;justify-content:center;align-items:flex-end;padding:12px 15px;background:var(--elevated);border:1px solid rgba(212,175,55,.2);border-radius:12px;flex-wrap:wrap}
+        .level-step{display:flex;flex-direction:column;align-items:center;gap:3px}
+        .level-mult{font-size:.5rem;color:var(--muted);font-weight:600}
+        .level-dot{width:32px;height:32px;border-radius:50%;background:var(--card);border:2px solid rgba(212,175,55,.3);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:rgba(212,175,55,.4);transition:all .3s}
+        .level-dot.active{background:var(--gold);border-color:var(--gold);color:var(--bg);box-shadow:0 0 15px rgba(212,175,55,.6);transform:scale(1.2)}
+        .level-dot.won{background:var(--success);border-color:var(--success);color:white}
+        .cards-container{display:flex;gap:15px;perspective:1000px;min-height:150px;align-items:center;justify-content:center}
+        .card{width:95px;height:133px;border-radius:10px;position:relative;transform-style:preserve-3d;transition:transform .6s ease}
+        .card.clickable{cursor:pointer;animation:glow 1.5s ease-in-out infinite}
+        @keyframes glow{0%,100%{box-shadow:0 0 15px rgba(212,175,55,.3)}50%{box-shadow:0 0 30px rgba(212,175,55,.6)}}
+        .card.flipped{transform:rotateY(180deg);cursor:default;animation:none}
+        .card-face{position:absolute;width:100%;height:100%;border-radius:10px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+        .card-back{background:linear-gradient(135deg,#1a1a2e,#0f0f1a);border:2px solid rgba(212,175,55,.3)}
+        .card-back::before{content:'';position:absolute;width:55%;height:65%;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(212,175,55,.1) 4px,rgba(212,175,55,.1) 5px);border:1px solid rgba(212,175,55,.2);border-radius:5px}
+        .tap-label{position:absolute;bottom:8px;font-size:.5rem;letter-spacing:.1em;color:var(--gold);text-transform:uppercase}
+        .card.flipped .tap-label{display:none}
+        .card-front{transform:rotateY(180deg);background:linear-gradient(180deg,#fff,#f5f5f5);color:#1C1C28}
+        .card-front.red{color:var(--red)}
+        .card-rank{position:absolute;top:5px;left:6px;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700}
+        .card-rank-bottom{position:absolute;bottom:5px;right:6px;font-family:'Playfair Display',serif;font-size:.9rem;font-weight:700;transform:rotate(180deg)}
+        .card-suit{font-size:2.5rem}
+        .card-placeholder{width:95px;height:133px;border-radius:10px;border:2px dashed rgba(212,175,55,.2);display:flex;align-items:center;justify-content:center;color:rgba(212,175,55,.3);font-size:1.3rem}
+        .tap-instruction{font-size:.8rem;color:var(--gold);animation:pulse 2s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:.7}50%{opacity:1}}
+        .pot-display{text-align:center;padding:12px 35px;background:linear-gradient(180deg,rgba(212,175,55,.15),rgba(212,175,55,.05));border:1px solid rgba(212,175,55,.3);border-radius:12px}
+        .pot-label{font-size:.6rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase}
+        .pot-value{font-family:'Playfair Display',serif;font-size:2rem;font-weight:700;color:var(--text)}
+        .multiplier-display{text-align:center;padding:8px 20px;background:linear-gradient(180deg,rgba(46,204,113,.15),rgba(46,204,113,.05));border:1px solid rgba(46,204,113,.3);border-radius:10px}
+        .multiplier-label{font-size:.55rem;letter-spacing:.1em;color:var(--success);text-transform:uppercase}
+        .multiplier-value{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--success)}
+        .multiplier-breakdown{font-size:.65rem;color:var(--muted)}
+        .betting-section{width:100%;max-width:520px}
+        .section-title{text-align:center;font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+        .bet-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .bet-btn{background:var(--elevated);border:1px solid rgba(212,175,55,.2);border-radius:10px;padding:14px 8px;cursor:pointer;transition:all .3s;text-align:center}
+        .bet-btn:hover:not(:disabled){border-color:var(--gold);transform:translateY(-2px)}
+        .bet-btn:disabled{opacity:.4;cursor:not-allowed}
+        .bet-btn.red-btn{background:linear-gradient(180deg,rgba(196,30,58,.2),var(--elevated))}
+        .bet-btn.black-btn{background:linear-gradient(180deg,rgba(28,28,40,.8),var(--elevated))}
+        .bet-btn.triple-btn{background:linear-gradient(180deg,rgba(212,175,55,.15),var(--elevated))}
+        .bet-name{font-family:'Playfair Display',serif;font-size:.85rem;font-weight:600;margin-bottom:3px;color:var(--text)}
+        .bet-multiplier{font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:2px}
+        .bet-potential{font-size:.65rem;color:var(--success)}
+        .bet-desc{font-size:.6rem;color:var(--muted)}
+        .press-buttons{display:flex;gap:12px;justify-content:center;align-items:stretch;flex-wrap:wrap}
+        .press-option{display:flex;flex-direction:column;align-items:center;padding:14px 25px;border-radius:12px;cursor:pointer;transition:all .3s;border:2px solid transparent;min-width:160px}
+        .press-option.cash-out{background:linear-gradient(135deg,rgba(46,204,113,.2),rgba(39,174,96,.1));border-color:var(--success)}
+        .press-option.cash-out:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(46,204,113,.3)}
+        .press-option.press-again{background:linear-gradient(135deg,rgba(231,76,60,.2),rgba(192,57,43,.1));border-color:var(--danger)}
+        .press-option.press-again:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(231,76,60,.3)}
+        .press-option-title{font-size:.9rem;font-weight:700;margin-bottom:4px}
+        .cash-out .press-option-title{color:var(--success)}
+        .press-again .press-option-title{color:var(--danger)}
+        .press-option-amount{font-size:1.2rem;font-weight:700;color:var(--text)}
+        .press-option-sub{font-size:.6rem;color:var(--muted);margin-top:2px}
+        .potential-mult{font-size:.65rem;color:var(--gold);margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.1);text-align:center}
+        .action-buttons{display:flex;gap:10px;justify-content:center}
+        .action-btn{padding:11px 30px;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:none;border-radius:8px;cursor:pointer;transition:all .3s}
+        .btn-primary{background:linear-gradient(135deg,var(--gold-light),var(--gold),var(--gold-dark));color:var(--bg)}
+        .action-btn:hover:not(:disabled){transform:translateY(-2px)}
+        .bet-input-section{text-align:center;padding:18px;background:var(--elevated);border:1px solid rgba(212,175,55,.2);border-radius:12px;max-width:300px}
+        .bet-input-label{font-size:.65rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+        .bet-input-wrapper{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:10px}
+        .bet-input{width:110px;padding:9px 10px;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;text-align:center;background:var(--card);border:2px solid rgba(212,175,55,.3);border-radius:8px;color:var(--text);outline:none}
+        .bet-input:focus{border-color:var(--gold)}
+        .quick-bet-btns{display:flex;gap:5px;justify-content:center;margin-bottom:10px;flex-wrap:wrap}
+        .quick-bet{padding:4px 9px;font-size:.7rem;background:var(--card);border:1px solid rgba(212,175,55,.2);border-radius:5px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--gold);color:var(--gold)}
+        .result-message{text-align:center;padding:10px 20px;border-radius:10px;font-size:.9rem;font-weight:600}
+        .result-win{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.4);color:var(--success)}
+        .result-lose{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.4);color:var(--danger)}
+        .shoe-indicator{position:fixed;bottom:10px;right:10px;background:var(--elevated);border:1px solid rgba(212,175,55,.2);border-radius:8px;padding:6px 10px;font-size:.65rem;color:var(--muted)}
+        .shoe-indicator span{color:var(--gold);font-weight:600}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:all .3s}
+        .modal-overlay.active{opacity:1;visibility:visible}
+        .modal{background:var(--elevated);border:1px solid rgba(212,175,55,.3);border-radius:14px;padding:20px;max-width:400px;max-height:70vh;overflow-y:auto}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(212,175,55,.2)}
+        .modal-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold)}
+        .modal-close{width:28px;height:28px;border-radius:50%;background:var(--card);border:1px solid rgba(212,175,55,.2);color:var(--muted);cursor:pointer;font-size:1rem}
+        .modal-content h3{font-size:.85rem;color:var(--gold);margin:10px 0 5px}
+        .modal-content p,.modal-content li{color:var(--muted);line-height:1.5;font-size:.75rem}
+        .modal-content ul{list-style:none;padding-left:10px}
+        .modal-content li::before{content:'◆';color:var(--gold);margin-right:5px;font-size:.45em}
+        @media(max-width:500px){.bet-options{grid-template-columns:1fr}.level-track{gap:4px}.level-dot{width:26px;height:26px;font-size:.6rem}.level-mult{font-size:.45rem}}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">TRIPLE PRESS</h1>
+        <p class="tagline">Press Your Luck</p>
+        <a class="help-link" id="helpBtn">? Rules</a>
+    </header>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Pot</div><div class="stat-value" id="potStat">$0</div></div>
+        <div class="stat"><div class="stat-label">Level</div><div class="stat-value" id="levelStat">-</div></div>
+    </div>
+    <div class="game-area">
+        <div id="betInputScreen" class="bet-input-section">
+            <div class="bet-input-label">Starting Bet</div>
+            <div class="bet-input-wrapper">
+                <span style="font-size:1.1rem;color:var(--gold);">$</span>
+                <input type="number" class="bet-input" id="betInput" min="10" value="100">
+            </div>
+            <div class="quick-bet-btns">
+                <button class="quick-bet" data-amt="25">$25</button>
+                <button class="quick-bet" data-amt="50">$50</button>
+                <button class="quick-bet" data-amt="100">$100</button>
+                <button class="quick-bet" data-amt="250">$250</button>
+            </div>
+            <button class="action-btn btn-primary" id="startBtn">Deal Cards</button>
+        </div>
+        <div id="gameScreen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;">
+            <div class="level-track" id="levelTrack"></div>
+            <div class="cards-container" id="cardsContainer"></div>
+            <div class="tap-instruction hidden" id="tapInstruction">👆 Tap each card to reveal</div>
+            <div class="pot-display"><div class="pot-label">Current Pot</div><div class="pot-value" id="potDisplay">$0</div></div>
+            <div class="multiplier-display hidden" id="multiplierDisplay">
+                <div class="multiplier-label">Total Multiplier</div>
+                <div class="multiplier-value" id="multiplierValue">1.00x</div>
+                <div class="multiplier-breakdown" id="multiplierBreakdown"></div>
+            </div>
+            <div id="resultMessage" class="result-message hidden"></div>
+            <div id="betChoiceSection" class="betting-section">
+                <div class="section-title">Choose Your Prediction</div>
+                <div class="bet-options">
+                    <button class="bet-btn red-btn" id="betRed"><div class="bet-name">Majority Red</div><div class="bet-multiplier">1.90x</div><div class="bet-potential" id="potRed"></div><div class="bet-desc">2+ red</div></button>
+                    <button class="bet-btn black-btn" id="betBlack"><div class="bet-name">Majority Black</div><div class="bet-multiplier">1.90x</div><div class="bet-potential" id="potBlack"></div><div class="bet-desc">2+ black</div></button>
+                    <button class="bet-btn triple-btn" id="betTriple"><div class="bet-name">Any Triple</div><div class="bet-multiplier">3.60x</div><div class="bet-potential" id="potTriple"></div><div class="bet-desc">All same</div></button>
+                </div>
+            </div>
+            <div id="pressSection" class="press-buttons hidden">
+                <div class="press-option cash-out" id="cashOutBtn">
+                    <div class="press-option-title">💰 Cash Out</div>
+                    <div class="press-option-amount" id="cashOutAmount">$0</div>
+                    <div class="press-option-sub">Secure winnings</div>
+                </div>
+                <div class="press-option press-again" id="pressBtn">
+                    <div class="press-option-title">🔥 Press Again</div>
+                    <div class="press-option-amount">Risk It All</div>
+                    <div class="potential-mult">Next win could be:<br><strong id="nextMultRange">3.61x - 6.84x</strong></div>
+                </div>
+            </div>
+            <div id="newRoundSection" class="action-buttons hidden">
+                <button class="action-btn btn-primary" id="newRoundBtn">New Round</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="shoe-indicator">🃏 <span id="shoeCount">156</span></div>
+<div class="modal-overlay" id="rulesModal">
+    <div class="modal">
+        <div class="modal-header"><h2 class="modal-title">How to Play</h2><button class="modal-close" id="closeModal">×</button></div>
+        <div class="modal-content">
+            <p>Build your pot by predicting card colors!</p>
+            <h3>Flow</h3><ul><li>Place bet → Predict → Tap cards</li><li>Win = Pot multiplies</li><li>Cash Out or Press for more</li></ul>
+            <h3>Bets</h3><ul><li>Majority (1.90x)</li><li>Triple (3.60x)</li></ul>
+        </div>
+    </div>
+</div>
+<script>
+const DECKS=3,CUT=30,MAX_LVL=10,KEY='prestige_casino_bankroll';
+const MULT={RED:1.90,BLACK:1.90,TRIPLE:3.60};
+const SUITS=['♥','♦','♠','♣'],RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let S={bankroll:1000,pot:0,origBet:0,totalMult:1,level:0,shoe:[],cards:[],choice:null,revealed:0,active:false,waitChoice:false,waitReveal:false,waitPress:false};
+const E={bankroll:document.getElementById('bankroll'),potStat:document.getElementById('potStat'),levelStat:document.getElementById('levelStat'),betInput:document.getElementById('betInput'),betInputScreen:document.getElementById('betInputScreen'),gameScreen:document.getElementById('gameScreen'),cardsContainer:document.getElementById('cardsContainer'),tapInstruction:document.getElementById('tapInstruction'),potDisplay:document.getElementById('potDisplay'),multiplierDisplay:document.getElementById('multiplierDisplay'),multiplierValue:document.getElementById('multiplierValue'),multiplierBreakdown:document.getElementById('multiplierBreakdown'),resultMessage:document.getElementById('resultMessage'),betChoiceSection:document.getElementById('betChoiceSection'),pressSection:document.getElementById('pressSection'),newRoundSection:document.getElementById('newRoundSection'),betRed:document.getElementById('betRed'),betBlack:document.getElementById('betBlack'),betTriple:document.getElementById('betTriple'),potRed:document.getElementById('potRed'),potBlack:document.getElementById('potBlack'),potTriple:document.getElementById('potTriple'),startBtn:document.getElementById('startBtn'),cashOutBtn:document.getElementById('cashOutBtn'),cashOutAmount:document.getElementById('cashOutAmount'),pressBtn:document.getElementById('pressBtn'),nextMultRange:document.getElementById('nextMultRange'),newRoundBtn:document.getElementById('newRoundBtn'),shoeCount:document.getElementById('shoeCount'),levelTrack:document.getElementById('levelTrack'),rulesModal:document.getElementById('rulesModal'),helpBtn:document.getElementById('helpBtn'),closeModal:document.getElementById('closeModal')};
+function load(){S.bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,S.bankroll.toString());}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function makeShoe(){const s=[];for(let d=0;d<DECKS;d++)for(const su of SUITS)for(const r of RANKS)s.push({suit:su,rank:r,color:(su==='♥'||su==='♦')?'red':'black'});return shuffle(s);}
+function draw(n){if(S.shoe.length<CUT)S.shoe=makeShoe();const c=S.shoe.splice(0,n);E.shoeCount.textContent=S.shoe.length;return c;}
+function updateDisplay(){
+    E.bankroll.textContent='$'+S.bankroll.toLocaleString();
+    E.potStat.textContent='$'+S.pot.toLocaleString();
+    E.potDisplay.textContent='$'+S.pot.toLocaleString();
+    E.levelStat.textContent=S.level>0?S.level:'-';
+    E.potRed.textContent='Win $'+Math.floor(S.pot*MULT.RED).toLocaleString();
+    E.potBlack.textContent='Win $'+Math.floor(S.pot*MULT.BLACK).toLocaleString();
+    E.potTriple.textContent='Win $'+Math.floor(S.pot*MULT.TRIPLE).toLocaleString();
+    if(S.level>=1&&S.active){E.multiplierDisplay.classList.remove('hidden');E.multiplierValue.textContent=S.totalMult.toFixed(2)+'x';E.multiplierBreakdown.textContent='$'+S.origBet+' → $'+S.pot;}else E.multiplierDisplay.classList.add('hidden');
+    E.cashOutAmount.textContent='$'+S.pot.toLocaleString();
+    const nextLow=(S.totalMult*MULT.RED).toFixed(2),nextHigh=(S.totalMult*MULT.TRIPLE).toFixed(2);
+    E.nextMultRange.textContent=nextLow+'x - '+nextHigh+'x';
+    updateLevelTrack();
+}
+function updateLevelTrack(){
+    E.levelTrack.innerHTML='';
+    let cum=1;
+    for(let i=1;i<=MAX_LVL;i++){
+        cum*=MULT.RED;
+        const step=document.createElement('div');step.className='level-step';
+        const mult=document.createElement('div');mult.className='level-mult';mult.textContent=cum.toFixed(1)+'x';
+        const dot=document.createElement('div');dot.className='level-dot'+(i<S.level?' won':'')+(i===S.level?' active':'');dot.textContent=i;
+        step.appendChild(mult);step.appendChild(dot);E.levelTrack.appendChild(step);
+    }
+}
+function renderCards(cards){E.cardsContainer.innerHTML='';cards.forEach(c=>{const el=document.createElement('div');el.className='card clickable';el.innerHTML=`<div class="card-face card-back"><span class="tap-label">TAP</span></div><div class="card-face card-front ${c.color}"><span class="card-rank">${c.rank}</span><span class="card-suit">${c.suit}</span><span class="card-rank-bottom">${c.rank}</span></div>`;el.onclick=()=>reveal(el);E.cardsContainer.appendChild(el);});}
+function reveal(el){if(!S.waitReveal||el.classList.contains('flipped'))return;el.classList.add('flipped');el.classList.remove('clickable');if(++S.revealed>=3){S.waitReveal=false;E.tapInstruction.classList.add('hidden');setTimeout(resolve,400);}}
+function showResult(msg,win){E.resultMessage.textContent=msg;E.resultMessage.className='result-message '+(win?'result-win':'result-lose');E.resultMessage.classList.remove('hidden');}
+function hideResult(){E.resultMessage.classList.add('hidden');}
+function start(){const bet=parseInt(E.betInput.value)||0;if(bet<10)return alert('Min $10');if(bet>S.bankroll)return alert('Not enough');S.bankroll-=bet;S.pot=bet;S.origBet=bet;S.totalMult=1;S.level=1;S.active=true;save();updateDisplay();E.betInputScreen.classList.add('hidden');E.gameScreen.classList.remove('hidden');dealStep();}
+function dealStep(){hideResult();E.pressSection.classList.add('hidden');E.newRoundSection.classList.add('hidden');E.betChoiceSection.classList.remove('hidden');E.tapInstruction.classList.add('hidden');E.betRed.disabled=E.betBlack.disabled=E.betTriple.disabled=false;S.cards=draw(3);S.revealed=0;S.choice=null;S.waitChoice=true;S.waitReveal=false;E.cardsContainer.innerHTML='<div class="card-placeholder">?</div><div class="card-placeholder">?</div><div class="card-placeholder">?</div>';updateDisplay();}
+function choose(ch){if(!S.waitChoice)return;S.waitChoice=false;S.choice=ch;E.betRed.disabled=E.betBlack.disabled=E.betTriple.disabled=true;E.betChoiceSection.classList.add('hidden');renderCards(S.cards);S.waitReveal=true;E.tapInstruction.classList.remove('hidden');}
+function resolve(){const red=S.cards.filter(c=>c.color==='red').length;let win=false,m=1;if(S.choice==='RED'){win=red>=2;m=MULT.RED;}else if(S.choice==='BLACK'){win=(3-red)>=2;m=MULT.BLACK;}else{win=red===3||red===0;m=MULT.TRIPLE;}if(win){const np=Math.floor(S.pot*m),wa=np-S.pot;S.pot=np;S.totalMult=S.pot/S.origBet;updateDisplay();showResult(`WIN! +$${wa.toLocaleString()} (${m}x)`,true);if(S.level>=MAX_LVL){setTimeout(()=>{showResult(`MAX! Cash $${S.pot.toLocaleString()}`,true);cashOut();},1500);}else{E.pressSection.classList.remove('hidden');S.waitPress=true;}}else{showResult(`BUST! Lost $${S.pot.toLocaleString()}`,false);S.pot=0;S.totalMult=0;S.active=false;updateDisplay();E.newRoundSection.classList.remove('hidden');}}
+function cashOut(){S.bankroll+=S.pot;showResult(`Cashed $${S.pot.toLocaleString()} (+$${(S.pot-S.origBet).toLocaleString()})`,true);S.pot=0;S.active=false;S.waitPress=false;save();updateDisplay();E.pressSection.classList.add('hidden');E.newRoundSection.classList.remove('hidden');}
+function press(){if(!S.waitPress)return;S.waitPress=false;S.level++;updateDisplay();dealStep();}
+function newRound(){if(S.bankroll<10)return alert('Bankroll too low');S.level=0;S.totalMult=1;hideResult();E.multiplierDisplay.classList.add('hidden');E.gameScreen.classList.add('hidden');E.betInputScreen.classList.remove('hidden');}
+E.startBtn.onclick=start;E.betRed.onclick=()=>choose('RED');E.betBlack.onclick=()=>choose('BLACK');E.betTriple.onclick=()=>choose('TRIPLE');E.cashOutBtn.onclick=cashOut;E.pressBtn.onclick=press;E.newRoundBtn.onclick=newRound;
+document.querySelectorAll('.quick-bet').forEach(b=>b.onclick=()=>E.betInput.value=b.dataset.amt);
+E.helpBtn.onclick=()=>E.rulesModal.classList.add('active');E.closeModal.onclick=()=>E.rulesModal.classList.remove('active');E.rulesModal.onclick=e=>{if(e.target===E.rulesModal)E.rulesModal.classList.remove('active');};
+load();S.shoe=makeShoe();updateDisplay();
+</script>
+</body>
+</html>

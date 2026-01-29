@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUNT JUMP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--orange:#FF6B35;--yellow:#FFD93D;--blue:#4ECDC4;--bg:#1a1a2e;--card:#16213e;--text:#fff;--muted:#8892b0}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{max-width:1000px;margin:0 auto;padding:15px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:12px 0;position:relative}
+        .back-btn{position:absolute;top:12px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Russo One',sans-serif;font-size:clamp(1.8rem,5vw,2.8rem);color:var(--orange);text-shadow:0 0 20px rgba(255,107,53,.5)}
+        .tagline{font-size:.65rem;letter-spacing:.3em;color:var(--yellow);text-transform:uppercase}
+        .help-link{position:absolute;top:12px;right:0;color:var(--orange);font-size:.8rem;cursor:pointer}
+        .stats-bar{display:flex;justify-content:center;gap:25px;padding:10px;margin:8px 0;background:var(--card);border:1px solid rgba(255,107,53,.3);border-radius:10px}
+        .stat{text-align:center}
+        .stat-label{font-size:.55rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+        .stat-value{font-family:'Russo One',sans-serif;font-size:1.2rem;color:var(--orange)}
+        .stat-value.bankroll{color:var(--text)}
+        .game-layout{display:grid;grid-template-columns:1fr 200px;gap:12px;flex:1}
+        @media(max-width:700px){.game-layout{grid-template-columns:1fr}.side-panel{order:-1}}
+        .main-area{display:flex;flex-direction:column;gap:10px}
+        .game-screen{background:#87CEEB;border:2px solid var(--orange);border-radius:12px;position:relative;overflow:hidden;height:300px}
+        #gameCanvas{width:100%;height:100%;display:block}
+        .flight-hud{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Russo One',sans-serif;font-size:2.5rem;color:#fff;text-shadow:2px 2px 8px rgba(0,0,0,.8);opacity:0;transition:opacity .3s}
+        .flight-hud.visible{opacity:1}
+        .distance-hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-family:'Russo One',sans-serif;font-size:1.8rem;color:#1a1a2e;text-shadow:1px 1px 0 #fff;opacity:0;transition:opacity .5s}
+        .distance-hud.visible{opacity:1}
+        .target-hud{position:absolute;top:45px;left:50%;transform:translateX(-50%);font-size:.7rem;color:#1a1a2e;background:rgba(255,255,255,.8);padding:3px 10px;border-radius:10px}
+        .overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.7)}
+        .overlay.hidden{display:none}
+        .overlay-title{font-family:'Russo One',sans-serif;font-size:1.8rem;margin-bottom:8px}
+        .overlay-title.win{color:#4ECDC4}
+        .overlay-title.lose{color:#FF6B6B}
+        .overlay-sub{font-size:.9rem;color:#ccc}
+        .actions{display:flex;justify-content:center;gap:10px}
+        .btn{padding:10px 28px;font-family:'Russo One',sans-serif;font-size:.8rem;border:none;border-radius:8px;cursor:pointer;transition:all .3s}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        .btn-orange{background:linear-gradient(135deg,var(--orange),#E85A24);color:white}
+        .btn:hover:not(:disabled){transform:translateY(-2px)}
+        .result{text-align:center;padding:10px 18px;border-radius:8px;font-weight:600;font-size:.85rem}
+        .result-win{background:rgba(78,205,196,.15);border:1px solid rgba(78,205,196,.4);color:var(--blue)}
+        .result-lose{background:rgba(255,107,107,.15);border:1px solid rgba(255,107,107,.4);color:#FF6B6B}
+        .side-panel{display:flex;flex-direction:column;gap:8px}
+        .panel{background:var(--card);border:1px solid rgba(255,107,53,.2);border-radius:10px;padding:12px}
+        .panel-title{font-family:'Russo One',sans-serif;font-size:.75rem;color:var(--orange);margin-bottom:10px;text-align:center;padding-bottom:6px;border-bottom:1px solid rgba(255,107,53,.2)}
+        .bet-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+        .bet-row label{font-size:.65rem;color:var(--muted)}
+        .bet-input{flex:1;padding:8px;font-family:'Russo One',sans-serif;font-size:.9rem;text-align:center;background:#0f0f23;border:1px solid rgba(255,107,53,.3);border-radius:6px;color:var(--text);outline:none}
+        .quick-bets{display:flex;gap:4px;justify-content:center;margin-bottom:10px;flex-wrap:wrap}
+        .quick-bet{padding:4px 8px;font-size:.65rem;background:#0f0f23;border:1px solid rgba(255,107,53,.2);border-radius:4px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--orange);color:var(--orange)}
+        .dist-opt{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;margin-bottom:5px;background:#0f0f23;border:2px solid rgba(255,107,53,.15);border-radius:8px;cursor:pointer;transition:all .2s}
+        .dist-opt:hover{border-color:rgba(255,107,53,.4)}
+        .dist-opt.sel{border-color:var(--orange);background:rgba(255,107,53,.1)}
+        .dist-opt.hidden-during-flight{opacity:0.3}
+        .dist-label{font-family:'Russo One',sans-serif;font-size:.75rem;color:var(--text)}
+        .dist-prob{font-size:.5rem;color:var(--muted)}
+        .dist-payout{font-family:'Russo One',sans-serif;font-size:.8rem;color:var(--yellow)}
+        .edge-note{font-size:.5rem;color:var(--muted);text-align:center;margin-top:5px}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:all .3s}
+        .modal-overlay.active{opacity:1;visibility:visible}
+        .modal{background:var(--card);border:1px solid rgba(255,107,53,.3);border-radius:14px;padding:20px;max-width:350px}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid rgba(255,107,53,.2);padding-bottom:8px}
+        .modal-title{font-family:'Russo One',sans-serif;color:var(--orange)}
+        .modal-close{width:28px;height:28px;border-radius:50%;background:#0f0f23;border:1px solid rgba(255,107,53,.2);color:var(--muted);cursor:pointer}
+        .modal-content p{color:var(--muted);font-size:.75rem;line-height:1.5}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">STUNT JUMP</h1>
+        <p class="tagline">Send It!</p>
+        <a class="help-link" id="helpBtn">? Rules</a>
+    </header>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Bet</div><div class="stat-value" id="betDisplay">$0</div></div>
+        <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="lastWin">-</div></div>
+    </div>
+    <div class="game-layout">
+        <div class="main-area">
+            <div class="game-screen">
+                <canvas id="gameCanvas"></canvas>
+                <div class="flight-hud" id="flightHud">🚗 IN THE AIR!</div>
+                <div class="distance-hud" id="distHud">0 ft</div>
+                <div class="target-hud">Target: <span id="targetHud">100+ ft</span></div>
+                <div class="overlay" id="overlay">
+                    <div class="overlay-title" id="overlayTitle">READY?</div>
+                    <div class="overlay-sub" id="overlaySub">Pick distance & launch!</div>
+                </div>
+            </div>
+            <div id="resultArea" class="hidden"></div>
+            <div class="actions" id="actionsArea"><button class="btn btn-orange" id="launchBtn">🚗 LAUNCH!</button></div>
+            <div class="actions hidden" id="againArea"><button class="btn btn-orange" id="againBtn">Again</button></div>
+        </div>
+        <div class="side-panel">
+            <div class="panel">
+                <div class="panel-title">Bet Amount</div>
+                <div class="bet-row"><label>$</label><input type="number" class="bet-input" id="betInput" value="50" min="10"></div>
+                <div class="quick-bets">
+                    <button class="quick-bet" data-v="25">25</button>
+                    <button class="quick-bet" data-v="50">50</button>
+                    <button class="quick-bet" data-v="100">100</button>
+                </div>
+            </div>
+            <div class="panel" id="distPanel">
+                <div class="panel-title">Distance Target</div>
+                <div class="dist-opt sel" data-d="100" data-p="1.5"><div><span class="dist-label">100+ ft</span><br><span class="dist-prob">~70%</span></div><span class="dist-payout">1.5x</span></div>
+                <div class="dist-opt" data-d="150" data-p="2.2"><div><span class="dist-label">150+ ft</span><br><span class="dist-prob">~50%</span></div><span class="dist-payout">2.2x</span></div>
+                <div class="dist-opt" data-d="200" data-p="4.0"><div><span class="dist-label">200+ ft</span><br><span class="dist-prob">~28%</span></div><span class="dist-payout">4x</span></div>
+                <div class="dist-opt" data-d="250" data-p="8.0"><div><span class="dist-label">250+ ft</span><br><span class="dist-prob">~14%</span></div><span class="dist-payout">8x</span></div>
+                <div class="dist-opt" data-d="300" data-p="20"><div><span class="dist-label">300+ ft</span><br><span class="dist-prob">~6%</span></div><span class="dist-payout">20x</span></div>
+                <div class="edge-note">House edge ~5-7%</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="rulesModal">
+    <div class="modal">
+        <div class="modal-header"><h2 class="modal-title">Rules</h2><button class="modal-close" id="closeModal">×</button></div>
+        <div class="modal-content"><p>Pick a distance target, place your bet, and watch the car launch! Land past your target to win the multiplier.</p></div>
+    </div>
+</div>
+<script>
+const KEY='prestige_casino_bankroll';
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+let W,H,car,running,targetDist,payout,bet,finalDist,phase,zoom,cameraX;
+const E={bankroll:document.getElementById('bankroll'),betDisplay:document.getElementById('betDisplay'),lastWin:document.getElementById('lastWin'),betInput:document.getElementById('betInput'),distHud:document.getElementById('distHud'),flightHud:document.getElementById('flightHud'),targetHud:document.getElementById('targetHud'),overlay:document.getElementById('overlay'),overlayTitle:document.getElementById('overlayTitle'),overlaySub:document.getElementById('overlaySub'),resultArea:document.getElementById('resultArea'),actionsArea:document.getElementById('actionsArea'),againArea:document.getElementById('againArea'),launchBtn:document.getElementById('launchBtn'),againBtn:document.getElementById('againBtn'),distPanel:document.getElementById('distPanel'),rulesModal:document.getElementById('rulesModal'),helpBtn:document.getElementById('helpBtn'),closeModal:document.getElementById('closeModal')};
+let S={bankroll:1000,targetDist:100,payout:1.5};
+function load(){S.bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,S.bankroll.toString());}
+function updateUI(){E.bankroll.textContent='$'+S.bankroll.toLocaleString();E.targetHud.textContent=S.targetDist+'+ ft';}
+function resize(){const r=canvas.parentElement.getBoundingClientRect();W=canvas.width=r.width;H=canvas.height=r.height;}
+
+function draw(){
+    ctx.save();
+    
+    // Apply zoom and camera
+    ctx.translate(W/2,H/2);
+    ctx.scale(zoom,zoom);
+    ctx.translate(-W/2+cameraX,0);
+    
+    // Sky gradient
+    const skyGrd=ctx.createLinearGradient(0,-H/2,0,H*0.15);
+    skyGrd.addColorStop(0,'#1e90ff');
+    skyGrd.addColorStop(1,'#87CEEB');
+    ctx.fillStyle=skyGrd;
+    ctx.fillRect(-500,-H/2,W+1000,H*0.65+H/2);
+    
+    // Sun
+    ctx.fillStyle='#FFD93D';
+    ctx.beginPath();ctx.arc(W-100,-20,40,0,Math.PI*2);ctx.fill();
+    
+    // Ground
+    ctx.fillStyle='#228B22';
+    ctx.fillRect(-500,H*0.65,W+1500,H*0.35);
+    
+    // Road
+    ctx.fillStyle='#444';
+    ctx.fillRect(-500,H*0.65-4,W+1500,8);
+    
+    // Road stripes
+    ctx.fillStyle='#FFD93D';
+    for(let i=-500;i<W+1500;i+=40){
+        ctx.fillRect(i,H*0.65-1,20,2);
+    }
+    
+    // Ramp
+    ctx.fillStyle='#8B4513';
+    ctx.beginPath();
+    ctx.moveTo(60,H*0.65);
+    ctx.lineTo(140,H*0.65-70);
+    ctx.lineTo(140,H*0.65);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Ramp stripes
+    ctx.strokeStyle='#FFD93D';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(70,H*0.65-5);
+    ctx.lineTo(135,H*0.65-60);
+    ctx.stroke();
+    
+    // Distance markers (only show when not in flight or after landing)
+    if(phase!=='flight'){
+        ctx.fillStyle='#fff';
+        ctx.font='bold 10px Russo One';
+        for(let d=100;d<=400;d+=50){
+            const x=140+(d/400)*(W+200);
+            ctx.fillRect(x,H*0.65-3,3,12);
+            ctx.fillText(d+'ft',x-12,H*0.65+22);
+        }
+        
+        // Target line
+        const tx=140+(S.targetDist/400)*(W+200);
+        ctx.strokeStyle='rgba(255,215,0,.9)';
+        ctx.lineWidth=4;
+        ctx.setLineDash([8,8]);
+        ctx.beginPath();
+        ctx.moveTo(tx,H*0.65-35);
+        ctx.lineTo(tx,H*0.65+35);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+    
+    // Car
+    if(car){
+        ctx.save();
+        ctx.translate(car.x,car.y);
+        ctx.rotate(car.angle);
+        
+        // Car body
+        ctx.fillStyle='#FF6B35';
+        ctx.fillRect(-22,-11,44,22);
+        
+        // Windows
+        ctx.fillStyle='#87CEEB';
+        ctx.fillRect(-8,-9,16,10);
+        
+        // Wheels
+        ctx.fillStyle='#222';
+        ctx.beginPath();ctx.arc(-12,11,7,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(12,11,7,0,Math.PI*2);ctx.fill();
+        
+        // Wheel rims
+        ctx.fillStyle='#888';
+        ctx.beginPath();ctx.arc(-12,11,3,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.arc(12,11,3,0,Math.PI*2);ctx.fill();
+        
+        // Headlights
+        ctx.fillStyle='#FFD93D';
+        ctx.fillRect(18,-8,4,6);
+        
+        // Taillights
+        ctx.fillStyle='#FF0000';
+        ctx.fillRect(-22,-8,3,6);
+        
+        ctx.restore();
+        
+        // Dust/smoke trail when in air
+        if(phase==='flight'&&car.trail){
+            car.trail.forEach((t,i)=>{
+                ctx.globalAlpha=t.life*0.3;
+                ctx.fillStyle='#ddd';
+                ctx.beginPath();
+                ctx.arc(t.x,t.y,t.size,0,Math.PI*2);
+                ctx.fill();
+            });
+            ctx.globalAlpha=1;
+        }
+    }
+    
+    ctx.restore();
+}
+
+function initGame(){
+    resize();
+    
+    // Determine final distance with house edge
+    const r=Math.random();
+    if(r<0.05)finalDist=50+Math.random()*40;
+    else if(r<0.30)finalDist=90+Math.random()*50;
+    else if(r<0.50)finalDist=140+Math.random()*40;
+    else if(r<0.72)finalDist=180+Math.random()*40;
+    else if(r<0.86)finalDist=220+Math.random()*40;
+    else if(r<0.94)finalDist=260+Math.random()*50;
+    else finalDist=310+Math.random()*50;
+    
+    car={x:50,y:H*0.65-14,vx:0,vy:0,angle:0,trail:[]};
+    phase='accelerate';
+    zoom=1;
+    cameraX=0;
+    running=true;
+    
+    // Hide multipliers during flight
+    document.querySelectorAll('.dist-opt').forEach(el=>el.classList.add('hidden-during-flight'));
+    
+    E.overlay.classList.add('hidden');
+    E.resultArea.classList.add('hidden');
+    E.actionsArea.classList.add('hidden');
+    E.againArea.classList.add('hidden');
+    E.distHud.classList.remove('visible');
+    E.flightHud.classList.remove('visible');
+    
+    loop();
+}
+
+let frameCount=0;
+function update(){
+    if(!car)return;
+    frameCount++;
+    
+    if(phase==='accelerate'){
+        car.vx+=0.3;
+        car.x+=car.vx;
+        if(car.x>60){
+            // On ramp
+            car.y=H*0.65-14-(car.x-60)*0.875;
+            car.angle=-0.7;
+        }
+        if(car.x>140){
+            phase='flight';
+            car.vy=-14;
+            car.vx=8;
+            E.flightHud.classList.add('visible');
+        }
+    }
+    else if(phase==='flight'){
+        // Slower physics for more suspense
+        car.vy+=0.25;
+        car.x+=car.vx;
+        car.y+=car.vy;
+        car.angle=Math.atan2(car.vy,car.vx);
+        
+        // Add trail
+        if(frameCount%3===0){
+            car.trail.push({x:car.x-20,y:car.y+10,size:5+Math.random()*5,life:1});
+        }
+        car.trail.forEach(t=>{t.life-=0.02;t.size+=0.1;});
+        car.trail=car.trail.filter(t=>t.life>0);
+        
+        // Camera follows car slightly
+        cameraX=Math.max(0,(car.x-W*0.3)*0.3);
+        
+        // Check landing
+        if(car.y>=H*0.65-14){
+            phase='landing';
+            car.y=H*0.65-14;
+            car.angle=0;
+            E.flightHud.classList.remove('visible');
+            
+            // Calculate actual landing position for display
+            car.landX=140+(finalDist/400)*(W+200);
+        }
+    }
+    else if(phase==='landing'){
+        // Zoom out to show distance
+        zoom=Math.max(0.5,zoom-0.008);
+        cameraX+=(car.landX-W*0.5-cameraX)*0.05;
+        car.x+=(car.landX-car.x)*0.08;
+        
+        // Slow down
+        car.vx*=0.95;
+        
+        if(zoom<=0.52){
+            phase='reveal';
+            // Show multipliers again
+            document.querySelectorAll('.dist-opt').forEach(el=>el.classList.remove('hidden-during-flight'));
+            E.distHud.textContent=Math.floor(finalDist)+' ft';
+            E.distHud.classList.add('visible');
+            setTimeout(endGame,800);
+        }
+    }
+}
+
+function loop(){
+    if(!running)return;
+    update();
+    draw();
+    if(phase!=='done')requestAnimationFrame(loop);
+}
+
+function endGame(){
+    phase='done';
+    running=false;
+    const won=finalDist>=S.targetDist;
+    
+    if(won){
+        const win=Math.floor(bet*S.payout);
+        S.bankroll+=win;
+        E.overlayTitle.textContent='🎉 LANDED!';
+        E.overlayTitle.className='overlay-title win';
+        E.overlaySub.textContent=Math.floor(finalDist)+' ft — +$'+win+' ('+S.payout+'x)';
+        E.resultArea.className='result result-win';
+        E.resultArea.textContent='WIN +$'+(win-bet)+' profit!';
+        E.lastWin.textContent='+$'+(win-bet);
+        E.lastWin.style.color='#4ECDC4';
+    }else{
+        E.overlayTitle.textContent='💥 SHORT!';
+        E.overlayTitle.className='overlay-title lose';
+        E.overlaySub.textContent=Math.floor(finalDist)+' ft — Needed '+S.targetDist+'+ ft';
+        E.resultArea.className='result result-lose';
+        E.resultArea.textContent='Lost $'+bet;
+        E.lastWin.textContent='-$'+bet;
+        E.lastWin.style.color='#FF6B6B';
+    }
+    
+    save();
+    updateUI();
+    E.overlay.classList.remove('hidden');
+    E.resultArea.classList.remove('hidden');
+    E.againArea.classList.remove('hidden');
+}
+
+function launch(){
+    bet=parseInt(E.betInput.value)||0;
+    if(bet<10)return alert('Min $10');
+    if(bet>S.bankroll)return alert('Not enough');
+    S.bankroll-=bet;
+    save();
+    updateUI();
+    E.betDisplay.textContent='$'+bet;
+    initGame();
+}
+
+function reset(){
+    E.overlay.classList.remove('hidden');
+    E.overlayTitle.textContent='READY?';
+    E.overlayTitle.className='overlay-title';
+    E.overlaySub.textContent='Pick distance & launch!';
+    E.resultArea.classList.add('hidden');
+    E.againArea.classList.add('hidden');
+    E.actionsArea.classList.remove('hidden');
+    E.distHud.classList.remove('visible');
+    document.querySelectorAll('.dist-opt').forEach(el=>el.classList.remove('hidden-during-flight'));
+    zoom=1;
+    cameraX=0;
+    car=null;
+    resize();
+    draw();
+}
+
+E.launchBtn.onclick=launch;
+E.againBtn.onclick=reset;
+document.querySelectorAll('.quick-bet').forEach(b=>b.onclick=()=>E.betInput.value=b.dataset.v);
+document.querySelectorAll('.dist-opt').forEach(el=>{
+    el.onclick=()=>{
+        document.querySelectorAll('.dist-opt').forEach(e=>e.classList.remove('sel'));
+        el.classList.add('sel');
+        S.targetDist=parseFloat(el.dataset.d);
+        S.payout=parseFloat(el.dataset.p);
+        E.targetHud.textContent=S.targetDist+'+ ft';
+    };
+});
+E.helpBtn.onclick=()=>E.rulesModal.classList.add('active');
+E.closeModal.onclick=()=>E.rulesModal.classList.remove('active');
+E.rulesModal.onclick=e=>{if(e.target===E.rulesModal)E.rulesModal.classList.remove('active');};
+window.onresize=()=>{resize();if(!running)draw();};
+load();updateUI();resize();draw();
+</script>
+</body>
+</html>

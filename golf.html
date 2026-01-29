@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOLF GAMBLE | AEM Casino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root{--green:#2d5a27;--light-green:#4a7c42;--fairway:#3d8b37;--sand:#e8d4a8;--water:#2196f3;--gold:#d4af37;--bg:#1a2e1a;--card:#1e3a1e;--text:#fff;--muted:#8fa88f}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{max-width:900px;margin:0 auto;padding:15px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:12px 0;position:relative}
+        .back-btn{position:absolute;top:12px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold);text-shadow:0 0 20px rgba(212,175,55,.4)}
+        .tagline{font-size:.65rem;letter-spacing:.25em;color:var(--light-green);text-transform:uppercase}
+        .stats-bar{display:flex;justify-content:center;gap:25px;padding:10px;margin:10px 0;background:var(--card);border:1px solid rgba(212,175,55,.2);border-radius:10px}
+        .stat{text-align:center}
+        .stat-label{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+        .stat-value{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold)}
+        .stat-value.bankroll{color:var(--text)}
+        .game-screen{background:var(--card);border:2px solid rgba(212,175,55,.3);border-radius:15px;overflow:hidden;margin:10px 0}
+        .course-container{position:relative;height:280px;overflow:hidden}
+        #courseCanvas{width:100%;height:100%;display:block}
+        .shot-result{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .5s;pointer-events:none;background:rgba(0,0,0,.8);padding:20px 40px;border-radius:15px}
+        .shot-result.show{opacity:1}
+        .shot-result-text{font-family:'Playfair Display',serif;font-size:1.8rem;color:#fff}
+        .shot-result-sub{font-size:1.1rem;color:var(--gold);margin-top:5px}
+        .par-selector{display:flex;justify-content:center;gap:15px;padding:15px}
+        .par-option{flex:1;max-width:140px;padding:12px;background:var(--bg);border:2px solid rgba(212,175,55,.2);border-radius:12px;cursor:pointer;text-align:center;transition:all .3s}
+        .par-option:hover{border-color:rgba(212,175,55,.5)}
+        .par-option.selected{border-color:var(--gold);background:rgba(212,175,55,.1)}
+        .par-number{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--gold)}
+        .par-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;margin:3px 0}
+        .par-risk{font-size:.6rem;color:var(--light-green)}
+        .payouts{padding:12px 15px;background:var(--bg);margin:0 15px;border-radius:10px}
+        .payouts-title{font-size:.65rem;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:8px}
+        .payout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+        .payout-item{padding:6px;background:var(--card);border-radius:6px}
+        .payout-name{font-size:.6rem;color:var(--muted)}
+        .payout-mult{font-family:'Playfair Display',serif;font-size:.9rem;color:var(--gold)}
+        .payout-item.hazard .payout-mult{color:#e53935}
+        .bet-controls{padding:15px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;align-items:center}
+        .bet-wrap{display:flex;align-items:center;gap:6px}
+        .bet-wrap label{font-size:.75rem;color:var(--muted)}
+        .bet-input{width:90px;padding:8px;font-family:'Playfair Display',serif;font-size:1rem;text-align:center;background:var(--bg);border:2px solid rgba(212,175,55,.3);border-radius:8px;color:var(--text);outline:none}
+        .quick-bets{display:flex;gap:5px}
+        .quick-bet{padding:5px 10px;font-size:.7rem;background:var(--bg);border:1px solid rgba(212,175,55,.2);border-radius:5px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--gold);color:var(--gold)}
+        .btn{padding:10px 30px;font-family:'Playfair Display',serif;font-size:.85rem;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .3s}
+        .btn-gold{background:linear-gradient(135deg,#f4d03f,var(--gold),#b8860b);color:#1a1a2e}
+        .btn:hover:not(:disabled){transform:translateY(-2px)}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        .result{text-align:center;padding:12px 20px;border-radius:10px;margin:15px;font-weight:600}
+        .result-win{background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#4caf50}
+        .result-lose{background:rgba(229,57,53,.2);border:1px solid #e53935;color:#e53935}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">GOLF GAMBLE</h1>
+        <p class="tagline">Risk vs Reward</p>
+    </header>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Bet</div><div class="stat-value" id="betDisplay">$0</div></div>
+        <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="lastWin">-</div></div>
+    </div>
+    <div class="game-screen">
+        <div class="course-container">
+            <canvas id="courseCanvas"></canvas>
+            <div class="shot-result" id="shotResult">
+                <div class="shot-result-text" id="shotResultText">HOLE IN ONE!</div>
+                <div class="shot-result-sub" id="shotResultSub">50x</div>
+            </div>
+        </div>
+        <div class="par-selector" id="parSelector">
+            <div class="par-option selected" data-par="3">
+                <div class="par-number">3</div>
+                <div class="par-label">Par 3</div>
+                <div class="par-risk">Lower Risk</div>
+            </div>
+            <div class="par-option" data-par="4">
+                <div class="par-number">4</div>
+                <div class="par-label">Par 4</div>
+                <div class="par-risk">Medium Risk</div>
+            </div>
+            <div class="par-option" data-par="5">
+                <div class="par-number">5</div>
+                <div class="par-label">Par 5</div>
+                <div class="par-risk">High Rewards</div>
+            </div>
+        </div>
+        <div class="payouts" id="payoutsDisplay">
+            <div class="payouts-title">Payouts - Par <span id="payoutPar">3</span></div>
+            <div class="payout-grid" id="payoutGrid"></div>
+        </div>
+        <div class="bet-controls">
+            <div class="bet-wrap">
+                <label>$</label>
+                <input type="number" class="bet-input" id="betInput" value="50" min="10">
+            </div>
+            <div class="quick-bets">
+                <button class="quick-bet" data-v="25">25</button>
+                <button class="quick-bet" data-v="50">50</button>
+                <button class="quick-bet" data-v="100">100</button>
+            </div>
+            <button class="btn btn-gold" id="swingBtn">⛳ Take Shot</button>
+        </div>
+        <div id="resultArea" class="result hidden"></div>
+        <div class="bet-controls hidden" id="againArea">
+            <button class="btn btn-gold" id="againBtn">Play Again</button>
+        </div>
+    </div>
+</div>
+<script>
+const KEY='prestige_casino_bankroll';
+const canvas=document.getElementById('courseCanvas'),ctx=canvas.getContext('2d');
+let W,H;
+
+// FIXED POSITIONS for each outcome - these will match visually
+const POSITIONS={
+    3:{
+        hole:{x:0.78,y:0.38},
+        green:[{x:0.75,y:0.42},{x:0.81,y:0.36},{x:0.76,y:0.34}],
+        fairway:[{x:0.55,y:0.50},{x:0.45,y:0.55},{x:0.60,y:0.48}],
+        rough:[{x:0.30,y:0.60},{x:0.85,y:0.55},{x:0.25,y:0.45}],
+        sand:[{x:0.72,y:0.48},{x:0.82,y:0.45}],
+        water:[{x:0.40,y:0.65}]
+    },
+    4:{
+        hole:{x:0.82,y:0.35},
+        green:[{x:0.79,y:0.38},{x:0.84,y:0.33},{x:0.80,y:0.32}],
+        fairway:[{x:0.55,y:0.48},{x:0.45,y:0.52},{x:0.65,y:0.45}],
+        rough:[{x:0.25,y:0.55},{x:0.88,y:0.50},{x:0.20,y:0.40}],
+        sand:[{x:0.75,y:0.45},{x:0.70,y:0.50}],
+        water:[{x:0.35,y:0.55},{x:0.50,y:0.60}]
+    },
+    5:{
+        hole:{x:0.85,y:0.32},
+        green:[{x:0.82,y:0.35},{x:0.87,y:0.30},{x:0.83,y:0.29}],
+        fairway:[{x:0.50,y:0.50},{x:0.40,y:0.55},{x:0.60,y:0.45}],
+        rough:[{x:0.20,y:0.50},{x:0.90,y:0.45},{x:0.15,y:0.38}],
+        sand:[{x:0.78,y:0.42},{x:0.65,y:0.52}],
+        water:[{x:0.35,y:0.58},{x:0.55,y:0.62}]
+    }
+};
+
+// Payouts with house edge
+const PAYOUTS={
+    3:{
+        hole:{mult:15,chance:0.02,name:'Hole in One'},
+        green:{mult:3,chance:0.25,name:'On Green'},
+        fairway:{mult:1.5,chance:0.35,name:'Fairway'},
+        rough:{mult:0.5,chance:0.18,name:'Rough'},
+        sand:{mult:0,chance:0.10,name:'Sand Trap'},
+        water:{mult:0,chance:0.10,name:'Water'}
+    },
+    4:{
+        hole:{mult:30,chance:0.01,name:'Hole in One'},
+        green:{mult:5,chance:0.18,name:'On Green'},
+        fairway:{mult:2,chance:0.30,name:'Fairway'},
+        rough:{mult:0.8,chance:0.21,name:'Rough'},
+        sand:{mult:0,chance:0.15,name:'Sand Trap'},
+        water:{mult:0,chance:0.15,name:'Water'}
+    },
+    5:{
+        hole:{mult:50,chance:0.005,name:'Hole in One'},
+        green:{mult:8,chance:0.12,name:'On Green'},
+        fairway:{mult:3,chance:0.25,name:'Fairway'},
+        rough:{mult:1,chance:0.225,name:'Rough'},
+        sand:{mult:0,chance:0.20,name:'Sand Trap'},
+        water:{mult:0,chance:0.20,name:'Water'}
+    }
+};
+
+let S={bankroll:1000,bet:0,par:3,playing:false};
+let ball={x:0,y:0,targetX:0,targetY:0,progress:0,result:null};
+
+const E={
+    bankroll:document.getElementById('bankroll'),
+    betDisplay:document.getElementById('betDisplay'),
+    lastWin:document.getElementById('lastWin'),
+    betInput:document.getElementById('betInput'),
+    payoutPar:document.getElementById('payoutPar'),
+    payoutGrid:document.getElementById('payoutGrid'),
+    shotResult:document.getElementById('shotResult'),
+    shotResultText:document.getElementById('shotResultText'),
+    shotResultSub:document.getElementById('shotResultSub'),
+    resultArea:document.getElementById('resultArea'),
+    againArea:document.getElementById('againArea'),
+    swingBtn:document.getElementById('swingBtn'),
+    againBtn:document.getElementById('againBtn'),
+    parSelector:document.getElementById('parSelector')
+};
+
+function load(){S.bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,S.bankroll.toString());}
+function updateUI(){E.bankroll.textContent='$'+S.bankroll.toLocaleString();}
+
+function updatePayouts(){
+    E.payoutPar.textContent=S.par;
+    const p=PAYOUTS[S.par];
+    E.payoutGrid.innerHTML='';
+    ['hole','green','fairway','rough','sand','water'].forEach(key=>{
+        const val=p[key];
+        const div=document.createElement('div');
+        div.className='payout-item'+(val.mult===0?' hazard':'');
+        div.innerHTML=`<div class="payout-name">${val.name}</div><div class="payout-mult">${val.mult===0?'LOSE':val.mult+'x'}</div>`;
+        E.payoutGrid.appendChild(div);
+    });
+}
+
+function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    W=canvas.width=rect.width;
+    H=canvas.height=rect.height;
+}
+
+function drawCourse(){
+    const pos=POSITIONS[S.par];
+    const holeX=pos.hole.x*W;
+    const holeY=pos.hole.y*H;
+    
+    // Sky
+    ctx.fillStyle='#87CEEB';
+    ctx.fillRect(0,0,W,H*0.3);
+    
+    // Trees
+    ctx.fillStyle='#1a4d1a';
+    for(let i=0;i<W;i+=35){
+        ctx.beginPath();
+        ctx.moveTo(i,H*0.3);
+        ctx.lineTo(i+17,H*0.15);
+        ctx.lineTo(i+34,H*0.3);
+        ctx.fill();
+    }
+    
+    // Rough (base)
+    ctx.fillStyle='#2a5c24';
+    ctx.fillRect(0,H*0.3,W,H*0.7);
+    
+    // Fairway
+    ctx.fillStyle='#3d8b37';
+    ctx.beginPath();
+    if(S.par===3){
+        ctx.ellipse(W*0.5,H*0.55,W*0.35,H*0.22,0,0,Math.PI*2);
+    }else if(S.par===4){
+        ctx.moveTo(W*0.08,H*0.85);
+        ctx.quadraticCurveTo(W*0.3,H*0.5,W*0.55,H*0.42);
+        ctx.quadraticCurveTo(W*0.75,H*0.35,W*0.92,H*0.32);
+        ctx.lineTo(W*0.92,H*0.48);
+        ctx.quadraticCurveTo(W*0.75,H*0.52,W*0.55,H*0.58);
+        ctx.quadraticCurveTo(W*0.3,H*0.65,W*0.08,H*0.92);
+    }else{
+        ctx.moveTo(W*0.05,H*0.80);
+        ctx.bezierCurveTo(W*0.2,H*0.65,W*0.25,H*0.70,W*0.40,H*0.55);
+        ctx.bezierCurveTo(W*0.55,H*0.40,W*0.70,H*0.45,W*0.92,H*0.30);
+        ctx.lineTo(W*0.92,H*0.45);
+        ctx.bezierCurveTo(W*0.70,H*0.58,W*0.55,H*0.55,W*0.40,H*0.70);
+        ctx.bezierCurveTo(W*0.25,H*0.85,W*0.2,H*0.80,W*0.05,H*0.90);
+    }
+    ctx.fill();
+    
+    // Water hazards - draw at EXACT positions
+    ctx.fillStyle='#2196f3';
+    pos.water.forEach(w=>{
+        ctx.beginPath();
+        ctx.ellipse(w.x*W,w.y*H,W*0.08,H*0.07,0,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    // Sand bunkers - draw at EXACT positions
+    ctx.fillStyle='#e8d4a8';
+    pos.sand.forEach(s=>{
+        ctx.beginPath();
+        ctx.ellipse(s.x*W,s.y*H,22,14,0,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    // Green - draw at hole position
+    ctx.fillStyle='#4CAF50';
+    ctx.beginPath();
+    ctx.ellipse(holeX,holeY,45,35,0,0,Math.PI*2);
+    ctx.fill();
+    
+    // Hole
+    ctx.fillStyle='#111';
+    ctx.beginPath();
+    ctx.arc(holeX,holeY,5,0,Math.PI*2);
+    ctx.fill();
+    
+    // Flag
+    ctx.fillStyle='#fff';
+    ctx.fillRect(holeX,holeY-35,2,35);
+    ctx.fillStyle='#e53935';
+    ctx.beginPath();
+    ctx.moveTo(holeX+2,holeY-35);
+    ctx.lineTo(holeX+18,holeY-28);
+    ctx.lineTo(holeX+2,holeY-21);
+    ctx.fill();
+    
+    // Tee box
+    ctx.fillStyle='#4a7c42';
+    ctx.fillRect(W*0.05,H*0.82,25,12);
+    
+    // Ball
+    if(ball.progress>0||!S.playing){
+        ctx.fillStyle='#fff';
+        ctx.beginPath();
+        ctx.arc(ball.x,ball.y,5,0,Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle='#ccc';
+        ctx.lineWidth=1;
+        ctx.stroke();
+    }
+}
+
+function determineResult(){
+    const p=PAYOUTS[S.par];
+    const r=Math.random();
+    let cumulative=0;
+    
+    for(const key of ['hole','green','fairway','rough','sand','water']){
+        cumulative+=p[key].chance;
+        if(r<cumulative){
+            return{key,mult:p[key].mult,name:p[key].name};
+        }
+    }
+    return{key:'water',mult:0,name:'Water'};
+}
+
+function getTargetPosition(result){
+    const pos=POSITIONS[S.par];
+    const key=result.key;
+    
+    if(key==='hole'){
+        return{x:pos.hole.x*W,y:pos.hole.y*H};
+    }else{
+        const spots=pos[key];
+        const spot=spots[Math.floor(Math.random()*spots.length)];
+        return{x:spot.x*W,y:spot.y*H};
+    }
+}
+
+function takeShot(){
+    S.bet=parseInt(E.betInput.value)||0;
+    if(S.bet<10)return alert('Min $10');
+    if(S.bet>S.bankroll)return alert('Not enough');
+    
+    S.bankroll-=S.bet;
+    S.playing=true;
+    save();
+    updateUI();
+    E.betDisplay.textContent='$'+S.bet;
+    E.swingBtn.disabled=true;
+    E.parSelector.style.pointerEvents='none';
+    E.shotResult.classList.remove('show');
+    E.resultArea.classList.add('hidden');
+    E.againArea.classList.add('hidden');
+    
+    const result=determineResult();
+    const target=getTargetPosition(result);
+    
+    ball={x:W*0.07,y:H*0.85,targetX:target.x,targetY:target.y,progress:0,result};
+    
+    animateShot();
+}
+
+function animateShot(){
+    ball.progress+=0.025;
+    if(ball.progress>1)ball.progress=1;
+    
+    const t=ball.progress;
+    const arcHeight=120*(1-Math.pow(2*t-1,2));
+    
+    ball.x=W*0.07+(ball.targetX-W*0.07)*t;
+    ball.y=H*0.85+(ball.targetY-H*0.85)*t-arcHeight;
+    
+    drawCourse();
+    
+    if(ball.progress<1){
+        requestAnimationFrame(animateShot);
+    }else{
+        ball.x=ball.targetX;
+        ball.y=ball.targetY;
+        drawCourse();
+        showResult();
+    }
+}
+
+function showResult(){
+    const r=ball.result;
+    
+    E.shotResultText.textContent=r.name.toUpperCase()+'!';
+    E.shotResultSub.textContent=r.mult>0?r.mult+'x':'HAZARD';
+    E.shotResult.classList.add('show');
+    
+    setTimeout(()=>{
+        if(r.mult>0){
+            const win=Math.floor(S.bet*r.mult);
+            S.bankroll+=win;
+            E.resultArea.className='result result-win';
+            E.resultArea.textContent='🎉 '+r.name+'! Won $'+win+' (+$'+(win-S.bet)+')';
+            E.lastWin.textContent='+$'+(win-S.bet);
+            E.lastWin.style.color='#4caf50';
+        }else{
+            E.resultArea.className='result result-lose';
+            E.resultArea.textContent='💀 '+r.name+'! Lost $'+S.bet;
+            E.lastWin.textContent='-$'+S.bet;
+            E.lastWin.style.color='#e53935';
+        }
+        save();
+        updateUI();
+        E.resultArea.classList.remove('hidden');
+        E.againArea.classList.remove('hidden');
+        S.playing=false;
+    },1000);
+}
+
+function reset(){
+    E.shotResult.classList.remove('show');
+    E.resultArea.classList.add('hidden');
+    E.againArea.classList.add('hidden');
+    E.swingBtn.disabled=false;
+    E.parSelector.style.pointerEvents='auto';
+    ball={x:W*0.07,y:H*0.85,progress:0};
+    drawCourse();
+}
+
+document.querySelectorAll('.par-option').forEach(opt=>{
+    opt.onclick=()=>{
+        document.querySelectorAll('.par-option').forEach(o=>o.classList.remove('selected'));
+        opt.classList.add('selected');
+        S.par=parseInt(opt.dataset.par);
+        updatePayouts();
+        resize();
+        ball={x:W*0.07,y:H*0.85,progress:0};
+        drawCourse();
+    };
+});
+
+document.querySelectorAll('.quick-bet').forEach(b=>b.onclick=()=>E.betInput.value=b.dataset.v);
+E.swingBtn.onclick=takeShot;
+E.againBtn.onclick=reset;
+window.onresize=()=>{resize();drawCourse();};
+
+load();
+updateUI();
+updatePayouts();
+resize();
+ball={x:W*0.07,y:H*0.85,progress:0};
+drawCourse();
+</script>
+</body>
+</html>

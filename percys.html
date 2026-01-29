@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PERCY'S | AEM Casino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0d0d15;--card:#151520;--elevated:#1c1c2a;--text:#fff;--muted:#666680;--red:#e53935;--blue:#2196f3;--yellow:#ffc107;--green:#4caf50;--purple:#9c27b0;--orange:#ff9800}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;user-select:none}
+        .container{max-width:500px;margin:0 auto;padding:20px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:15px 0;position:relative}
+        .back-btn{position:absolute;top:15px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Permanent Marker',cursive;font-size:2.5rem;color:var(--green);text-shadow:0 0 30px rgba(76,175,80,.5)}
+        .tagline{font-size:.7rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-top:5px}
+        .stats-bar{display:flex;justify-content:center;gap:30px;padding:12px;margin:15px 0;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:12px}
+        .stat{text-align:center}
+        .stat-label{font-size:.6rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+        .stat-value{font-size:1.3rem;font-weight:700;color:var(--green)}
+        .stat-value.bankroll{color:var(--text)}
+        .game-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+        
+        .bet-section{text-align:center;padding:20px;background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:300px}
+        .bet-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+        .bet-input-wrap{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+        .bet-input{width:120px;padding:12px;font-size:1.2rem;font-weight:600;text-align:center;background:var(--elevated);border:2px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text);outline:none}
+        .bet-input:focus{border-color:var(--green)}
+        .quick-bets{display:flex;gap:6px;justify-content:center;margin-bottom:15px}
+        .quick-bet{padding:6px 12px;font-size:.75rem;background:var(--elevated);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--green);color:var(--green)}
+        .btn{padding:12px 40px;font-size:.9rem;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .3s}
+        .btn-green{background:linear-gradient(135deg,var(--green),#388e3c);color:white}
+        .btn:hover:not(:disabled){transform:translateY(-2px)}
+        
+        /* Pill Bottle */
+        .bottle-container{display:flex;flex-direction:column;align-items:center;gap:15px}
+        .bottle{width:120px;height:180px;position:relative;cursor:pointer;transition:transform .2s}
+        .bottle:hover{transform:scale(1.05)}
+        .bottle:active{transform:scale(0.98)}
+        .bottle-cap{width:90px;height:30px;background:linear-gradient(180deg,#ff6f00,#e65100);border-radius:8px 8px 0 0;margin:0 auto;position:relative;z-index:2}
+        .bottle-cap::after{content:'';position:absolute;bottom:0;left:10%;width:80%;height:5px;background:#bf360c}
+        .bottle-body{width:100px;height:140px;background:linear-gradient(180deg,#ffcc80,#ffb74d);border-radius:0 0 15px 15px;margin:0 auto;position:relative;display:flex;align-items:center;justify-content:center;box-shadow:inset -10px 0 20px rgba(0,0,0,.1)}
+        .bottle-label{width:80px;height:90px;background:#fff;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px}
+        .bottle-rx{font-family:'Permanent Marker',cursive;font-size:1.8rem;color:#1565c0}
+        .bottle-text{font-size:.5rem;color:#333;text-align:center;margin-top:3px}
+        .tap-text{font-size:.85rem;color:var(--orange);animation:pulse 1.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
+        
+        .bottle.opening{animation:bottleShake .5s ease-in-out}
+        @keyframes bottleShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+        
+        /* Pill reveal */
+        .pill-container{display:none;flex-direction:column;align-items:center;gap:20px}
+        .pill-container.visible{display:flex}
+        .pill{width:130px;height:130px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Permanent Marker',cursive;color:white;box-shadow:0 10px 40px rgba(0,0,0,.5);position:relative;animation:popIn .5s ease-out}
+        @keyframes popIn{0%{transform:scale(0);opacity:0}50%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+        .pill.fent{background:radial-gradient(circle at 30% 30%,#f44336,#c62828)}
+        .pill.addy{background:radial-gradient(circle at 30% 30%,#42a5f5,#1565c0)}
+        .pill.xan{background:radial-gradient(circle at 30% 30%,#ffca28,#f57f17)}
+        .pill.oxy{background:radial-gradient(circle at 30% 30%,#ce93d8,#7b1fa2)}
+        .pill.percys{background:radial-gradient(circle at 30% 30%,#66bb6a,#2e7d32)}
+        .pill.quaalude{background:radial-gradient(circle at 30% 30%,#ffab91,#e64a19)}
+        .pill-shine{position:absolute;top:15px;left:20px;width:25px;height:25px;background:rgba(255,255,255,.3);border-radius:50%}
+        .pill-name{font-size:1.3rem;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+        .pill-mult{font-size:2rem;margin-top:5px;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+        .pill-mult.hidden-mult{opacity:0}
+        .pill-mult.revealed{opacity:1;animation:revealMult .5s ease-out}
+        @keyframes revealMult{0%{transform:scale(0)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+        
+        .reveal-btn{margin-top:5px}
+        
+        .result{text-align:center;padding:15px 30px;border-radius:12px;font-weight:600;font-size:1.1rem}
+        .result-win{background:rgba(76,175,80,.2);border:2px solid rgba(76,175,80,.5);color:var(--green)}
+        .result-lose{background:rgba(229,57,53,.2);border:2px solid rgba(229,57,53,.5);color:var(--red)}
+        
+        .payout-info{background:var(--card);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;width:100%;max-width:320px}
+        .payout-title{font-size:.7rem;color:var(--muted);text-align:center;margin-bottom:8px;text-transform:uppercase}
+        .payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+        .payout-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--elevated);border-radius:8px}
+        .payout-pill{display:flex;align-items:center;gap:6px}
+        .payout-dot{width:14px;height:14px;border-radius:50%}
+        .payout-dot.fent{background:var(--red)}
+        .payout-dot.addy{background:var(--blue)}
+        .payout-dot.xan{background:var(--yellow)}
+        .payout-dot.oxy{background:var(--purple)}
+        .payout-dot.percys{background:var(--green)}
+        .payout-dot.quaalude{background:var(--orange)}
+        .payout-name{font-size:.7rem;color:var(--text)}
+        .payout-mult{font-size:.7rem;color:var(--muted);font-weight:600}
+        
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">PERCY'S</h1>
+        <p class="tagline">Pop the Top</p>
+    </header>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Bet</div><div class="stat-value" id="betDisplay">$0</div></div>
+        <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="lastWin">-</div></div>
+    </div>
+    <div class="game-area">
+        <div id="betSection" class="bet-section">
+            <div class="bet-label">Bet Amount</div>
+            <div class="bet-input-wrap">
+                <span style="font-size:1.2rem;color:var(--green)">$</span>
+                <input type="number" class="bet-input" id="betInput" value="50" min="10">
+            </div>
+            <div class="quick-bets">
+                <button class="quick-bet" data-v="25">$25</button>
+                <button class="quick-bet" data-v="50">$50</button>
+                <button class="quick-bet" data-v="100">$100</button>
+            </div>
+            <button class="btn btn-green" id="buyBtn">Buy Bottle</button>
+        </div>
+        
+        <div id="bottleSection" class="bottle-container hidden">
+            <div class="bottle" id="bottle">
+                <div class="bottle-cap"></div>
+                <div class="bottle-body">
+                    <div class="bottle-label">
+                        <div class="bottle-rx">Rx</div>
+                        <div class="bottle-text">PRESCRIPTION<br>ONLY</div>
+                    </div>
+                </div>
+            </div>
+            <div class="tap-text">👆 TAP TO OPEN</div>
+        </div>
+        
+        <div id="pillSection" class="pill-container">
+            <div class="pill" id="pill">
+                <div class="pill-shine"></div>
+                <div class="pill-name" id="pillName">?</div>
+                <div class="pill-mult" id="pillMult">?x</div>
+            </div>
+            <button class="btn btn-green reveal-btn hidden" id="revealBtn">Reveal Multiplier</button>
+            <div id="resultArea" class="result hidden"></div>
+            <button class="btn btn-green hidden" id="againBtn">Buy Another</button>
+        </div>
+        
+        <div class="payout-info">
+            <div class="payout-title">Payouts</div>
+            <div class="payout-grid">
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot fent"></div><span class="payout-name">Fent</span></div><span class="payout-mult">LOSE</span></div>
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot addy"></div><span class="payout-name">Addy</span></div><span class="payout-mult">1.5x</span></div>
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot xan"></div><span class="payout-name">Xan</span></div><span class="payout-mult">2x</span></div>
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot oxy"></div><span class="payout-name">Oxy</span></div><span class="payout-mult">2-12x</span></div>
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot percys"></div><span class="payout-name">Percy's</span></div><span class="payout-mult">6-15x</span></div>
+                <div class="payout-row"><div class="payout-pill"><div class="payout-dot quaalude"></div><span class="payout-name">Quaalude</span></div><span class="payout-mult">30-40x</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const KEY='prestige_casino_bankroll';
+// Probabilities: Fent 58%, Addy 12%, Xan 7%, Oxy 20.5%, Percy's 2%, Quaalude 0.5%
+const PILLS=[
+    {type:'fent',name:'Fent',class:'fent',chance:0.58,fixed:true,mult:0},
+    {type:'addy',name:'Addy',class:'addy',chance:0.12,fixed:true,mult:1.5},
+    {type:'xan',name:'Xan',class:'xan',chance:0.07,fixed:true,mult:2},
+    {type:'oxy',name:'Oxy',class:'oxy',chance:0.205,fixed:false,minMult:2,maxMult:12},
+    {type:'percys',name:"Percy's",class:'percys',chance:0.02,fixed:false,minMult:6,maxMult:15},
+    {type:'quaalude',name:'Quaalude',class:'quaalude',chance:0.005,fixed:false,minMult:30,maxMult:40}
+];
+
+let S={bankroll:1000,bet:0,currentPill:null};
+const E={
+    bankroll:document.getElementById('bankroll'),
+    betDisplay:document.getElementById('betDisplay'),
+    lastWin:document.getElementById('lastWin'),
+    betInput:document.getElementById('betInput'),
+    betSection:document.getElementById('betSection'),
+    bottleSection:document.getElementById('bottleSection'),
+    pillSection:document.getElementById('pillSection'),
+    bottle:document.getElementById('bottle'),
+    pill:document.getElementById('pill'),
+    pillName:document.getElementById('pillName'),
+    pillMult:document.getElementById('pillMult'),
+    revealBtn:document.getElementById('revealBtn'),
+    resultArea:document.getElementById('resultArea'),
+    againBtn:document.getElementById('againBtn'),
+    buyBtn:document.getElementById('buyBtn')
+};
+
+function load(){S.bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,S.bankroll.toString());}
+function updateUI(){E.bankroll.textContent='$'+S.bankroll.toLocaleString();}
+
+function determinePill(){
+    const r=Math.random();
+    let cumulative=0;
+    
+    for(const pill of PILLS){
+        cumulative+=pill.chance;
+        if(r<cumulative){
+            let mult;
+            if(pill.fixed){
+                mult=pill.mult;
+            }else{
+                mult=pill.minMult+Math.floor(Math.random()*(pill.maxMult-pill.minMult+1));
+            }
+            return{...pill,mult,needsReveal:!pill.fixed&&pill.mult!==0};
+        }
+    }
+    return{...PILLS[0],mult:0,needsReveal:false};
+}
+
+function openBottle(){
+    E.bottle.classList.add('opening');
+    setTimeout(()=>{
+        E.bottleSection.classList.add('hidden');
+        showPill();
+    },500);
+}
+
+function showPill(){
+    E.pillSection.classList.add('visible');
+    
+    const pill=determinePill();
+    S.currentPill=pill;
+    
+    E.pill.className='pill '+pill.class;
+    E.pillName.textContent=pill.name;
+    
+    if(pill.needsReveal){
+        // Has variable multiplier - need reveal button
+        E.pillMult.textContent='?x';
+        E.pillMult.classList.add('hidden-mult');
+        E.pillMult.classList.remove('revealed');
+        E.revealBtn.classList.remove('hidden');
+        E.resultArea.classList.add('hidden');
+        E.againBtn.classList.add('hidden');
+    }else{
+        // Fixed multiplier - show immediately
+        E.pillMult.textContent=pill.mult>0?pill.mult+'x':'0x';
+        E.pillMult.classList.remove('hidden-mult');
+        E.pillMult.classList.add('revealed');
+        E.revealBtn.classList.add('hidden');
+        setTimeout(showResult,800);
+    }
+}
+
+function revealMultiplier(){
+    E.revealBtn.classList.add('hidden');
+    E.pillMult.textContent=S.currentPill.mult+'x';
+    E.pillMult.classList.remove('hidden-mult');
+    E.pillMult.classList.add('revealed');
+    setTimeout(showResult,800);
+}
+
+function showResult(){
+    const pill=S.currentPill;
+    
+    if(pill.mult>0){
+        const win=Math.floor(S.bet*pill.mult);
+        S.bankroll+=win;
+        E.resultArea.className='result result-win';
+        E.resultArea.textContent='🎉 '+pill.name+'! +$'+(win-S.bet).toLocaleString()+' ('+pill.mult+'x)';
+        E.lastWin.textContent='+$'+(win-S.bet);
+        E.lastWin.style.color='#4caf50';
+    }else{
+        E.resultArea.className='result result-lose';
+        E.resultArea.textContent='💀 Fent! Lost $'+S.bet.toLocaleString();
+        E.lastWin.textContent='-$'+S.bet;
+        E.lastWin.style.color='#e53935';
+    }
+    
+    E.resultArea.classList.remove('hidden');
+    E.againBtn.classList.remove('hidden');
+    save();
+    updateUI();
+}
+
+function buyBottle(){
+    S.bet=parseInt(E.betInput.value)||0;
+    if(S.bet<10)return alert('Min $10');
+    if(S.bet>S.bankroll)return alert('Not enough');
+    
+    S.bankroll-=S.bet;
+    save();
+    updateUI();
+    E.betDisplay.textContent='$'+S.bet;
+    
+    E.betSection.classList.add('hidden');
+    E.bottleSection.classList.remove('hidden');
+    E.pillSection.classList.remove('visible');
+    E.bottle.classList.remove('opening');
+}
+
+function reset(){
+    E.pillSection.classList.remove('visible');
+    E.bottleSection.classList.add('hidden');
+    E.betSection.classList.remove('hidden');
+}
+
+E.buyBtn.onclick=buyBottle;
+E.bottle.onclick=openBottle;
+E.revealBtn.onclick=revealMultiplier;
+E.againBtn.onclick=reset;
+document.querySelectorAll('.quick-bet').forEach(b=>b.onclick=()=>E.betInput.value=b.dataset.v);
+
+load();
+updateUI();
+</script>
+</body>
+</html>

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISLAND VACATION | AEM Casino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0a1628;--card:#0f1f3d;--elevated:#152847;--text:#fff;--muted:#6b8fbd;--gold:#ffd700;--sand:#f4d03f}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .container{max-width:600px;margin:0 auto;padding:15px;min-height:100vh;display:flex;flex-direction:column}
+        header{text-align:center;padding:15px 0;position:relative}
+        .back-btn{position:absolute;top:15px;left:0;color:var(--muted);font-size:.85rem;text-decoration:none}
+        .logo{font-family:'Pacifico',cursive;font-size:2.2rem;color:var(--sand);text-shadow:0 0 30px rgba(244,208,63,.4)}
+        .tagline{font-size:.65rem;letter-spacing:.25em;color:var(--muted);text-transform:uppercase}
+        .stats-bar{display:flex;justify-content:center;gap:25px;padding:10px;margin:10px 0;background:var(--card);border:1px solid rgba(244,208,63,.2);border-radius:10px}
+        .stat{text-align:center}
+        .stat-label{font-size:.55rem;color:var(--muted);text-transform:uppercase}
+        .stat-value{font-size:1.2rem;font-weight:700;color:var(--sand)}
+        .stat-value.bankroll{color:var(--text)}
+        .game-screen{background:var(--card);border:2px solid rgba(244,208,63,.2);border-radius:15px;overflow:hidden;margin:10px 0;position:relative}
+        .scene{height:300px;position:relative;overflow:hidden}
+        #sceneCanvas{width:100%;height:100%;display:block}
+        
+        .character-reveal{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a1628;opacity:0;pointer-events:none;transition:opacity .5s}
+        .character-reveal.show{opacity:1;pointer-events:auto}
+        .character-image-container{width:300px;height:200px;display:flex;align-items:center;justify-content:center;margin-bottom:15px;border-radius:12px;overflow:hidden;background:#0d1a30}
+        .character-image{max-width:100%;max-height:100%;object-fit:contain;animation:bounceIn .6s ease-out}
+        .character-emoji{font-size:8rem;animation:bounceIn .6s ease-out}
+        @keyframes bounceIn{0%{transform:scale(0);opacity:0}50%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+        .character-name{font-family:'Pacifico',cursive;font-size:2rem;color:var(--sand);margin-bottom:10px}
+        .character-mult{font-size:2.5rem;font-weight:700}
+        .character-mult.win{color:#4caf50}
+        .character-mult.lose{color:#e53935}
+        
+        .bet-section{padding:20px;text-align:center}
+        .bet-label{font-size:.75rem;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+        .bet-input-wrap{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+        .bet-input{width:120px;padding:10px;font-size:1.1rem;font-weight:600;text-align:center;background:var(--bg);border:2px solid rgba(244,208,63,.3);border-radius:8px;color:var(--text);outline:none}
+        .quick-bets{display:flex;gap:6px;justify-content:center;margin-bottom:15px}
+        .quick-bet{padding:5px 12px;font-size:.75rem;background:var(--bg);border:1px solid rgba(244,208,63,.2);border-radius:5px;color:var(--muted);cursor:pointer}
+        .quick-bet:hover{border-color:var(--sand);color:var(--sand)}
+        .btn{padding:12px 40px;font-family:'Outfit',sans-serif;font-size:.9rem;font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .3s}
+        .btn-sand{background:linear-gradient(135deg,var(--sand),#c9a227);color:#1a1a2e}
+        .btn:hover:not(:disabled){transform:translateY(-2px)}
+        .btn:disabled{opacity:.5;cursor:not-allowed}
+        .result{text-align:center;padding:12px 20px;border-radius:10px;margin:15px;font-weight:600}
+        .result-win{background:rgba(76,175,80,.2);border:1px solid #4caf50;color:#4caf50}
+        .result-lose{background:rgba(229,57,53,.2);border:1px solid #e53935;color:#e53935}
+        .payout-info{padding:12px;background:var(--bg);margin:0 15px 15px;border-radius:10px}
+        .payout-title{font-size:.65rem;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:8px}
+        .payout-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+        .payout-item{padding:6px;background:var(--elevated);border-radius:8px;text-align:center}
+        .payout-emoji{font-size:1.2rem}
+        .payout-name{font-size:.5rem;color:var(--text);margin:2px 0}
+        .payout-mult{font-size:.6rem;color:var(--sand);font-weight:600}
+        .payout-item.lose .payout-mult{color:#e53935}
+        .hidden{display:none!important}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <a class="back-btn" href="index.html">← Lobby</a>
+        <h1 class="logo">Island Vacation</h1>
+        <p class="tagline">Who Will You Meet?</p>
+    </header>
+    <div class="stats-bar">
+        <div class="stat"><div class="stat-label">Bankroll</div><div class="stat-value bankroll" id="bankroll">$1,000</div></div>
+        <div class="stat"><div class="stat-label">Bet</div><div class="stat-value" id="betDisplay">$0</div></div>
+        <div class="stat"><div class="stat-label">Last</div><div class="stat-value" id="lastWin">-</div></div>
+    </div>
+    <div class="game-screen">
+        <div class="scene">
+            <canvas id="sceneCanvas"></canvas>
+            <div class="character-reveal" id="charReveal">
+                <div class="character-image-container" id="charImageContainer">
+                    <img class="character-image" id="charImage" src="" alt="" style="display:none">
+                    <div class="character-emoji" id="charEmoji">👤</div>
+                </div>
+                <div class="character-name" id="charName">???</div>
+                <div class="character-mult" id="charMult">0x</div>
+            </div>
+        </div>
+        <div id="betSection" class="bet-section">
+            <div class="bet-label">Book Your Trip</div>
+            <div class="bet-input-wrap">
+                <span style="font-size:1.1rem;color:var(--sand)">$</span>
+                <input type="number" class="bet-input" id="betInput" value="50" min="10">
+            </div>
+            <div class="quick-bets">
+                <button class="quick-bet" data-v="25">$25</button>
+                <button class="quick-bet" data-v="50">$50</button>
+                <button class="quick-bet" data-v="100">$100</button>
+            </div>
+            <button class="btn btn-sand" id="flyBtn">✈️ Fly to Island</button>
+        </div>
+        <div id="resultSection" class="hidden">
+            <div id="resultArea" class="result"></div>
+            <div style="text-align:center;padding:15px">
+                <button class="btn btn-sand" id="againBtn">Book Another Trip</button>
+            </div>
+        </div>
+        <div class="payout-info">
+            <div class="payout-title">Island Guests</div>
+            <div class="payout-grid">
+                <div class="payout-item lose"><div class="payout-emoji">👩‍💼</div><div class="payout-name">Hillary</div><div class="payout-mult">STEAL</div></div>
+                <div class="payout-item"><div class="payout-emoji">🤵</div><div class="payout-name">Bill</div><div class="payout-mult">1.5x</div></div>
+                <div class="payout-item"><div class="payout-emoji">😎</div><div class="payout-name">Epstein</div><div class="payout-mult">2x</div></div>
+                <div class="payout-item"><div class="payout-emoji">🎤</div><div class="payout-name">MJ</div><div class="payout-mult">4x</div></div>
+                <div class="payout-item"><div class="payout-emoji">🧠</div><div class="payout-name">Hawking</div><div class="payout-mult">15x</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preload images -->
+<div style="display:none">
+    <img id="preload_hillary" src="hillary.png" alt="">
+    <img id="preload_bill" src="bill.png" alt="">
+    <img id="preload_epstein" src="epstein.png" alt="">
+    <img id="preload_mj" src="mj.png" alt="">
+    <img id="preload_hawking" src="hawking.png" alt="">
+</div>
+
+<script>
+const KEY='prestige_casino_bankroll';
+const canvas=document.getElementById('sceneCanvas'),ctx=canvas.getContext('2d');
+let W,H;
+
+// Characters with images and fallback emojis
+const CHARS=[
+    {name:'Hillary',img:'hillary.png',emoji:'👩‍💼',mult:0,chance:0.58},
+    {name:'Bill Clinton',img:'bill.png',emoji:'🤵',mult:1.5,chance:0.20},
+    {name:'Epstein',img:'epstein.png',emoji:'😎',mult:2,chance:0.12},
+    {name:'Michael Jackson',img:'mj.png',emoji:'🎤',mult:4,chance:0.08},
+    {name:'Stephen Hawking',img:'hawking.png',emoji:'🧠',mult:15,chance:0.02}
+];
+
+// Preload and cache images
+const imageCache={};
+let imagesLoaded=0;
+
+function preloadImages(){
+    CHARS.forEach(char=>{
+        const img=new Image();
+        img.onload=()=>{
+            imageCache[char.name]=img;
+            imagesLoaded++;
+        };
+        img.onerror=()=>{
+            console.log('Failed to load:',char.img);
+            imagesLoaded++;
+        };
+        img.src=char.img;
+    });
+}
+
+preloadImages();
+
+let S={bankroll:1000,bet:0,phase:'idle',planeX:-80,planeY:60,planeAngle:0,char:null};
+const E={
+    bankroll:document.getElementById('bankroll'),
+    betDisplay:document.getElementById('betDisplay'),
+    lastWin:document.getElementById('lastWin'),
+    betInput:document.getElementById('betInput'),
+    betSection:document.getElementById('betSection'),
+    resultSection:document.getElementById('resultSection'),
+    resultArea:document.getElementById('resultArea'),
+    charReveal:document.getElementById('charReveal'),
+    charImage:document.getElementById('charImage'),
+    charEmoji:document.getElementById('charEmoji'),
+    charName:document.getElementById('charName'),
+    charMult:document.getElementById('charMult'),
+    flyBtn:document.getElementById('flyBtn'),
+    againBtn:document.getElementById('againBtn')
+};
+
+function load(){S.bankroll=parseInt(localStorage.getItem(KEY))||1000;}
+function save(){localStorage.setItem(KEY,S.bankroll.toString());}
+function updateUI(){E.bankroll.textContent='$'+S.bankroll.toLocaleString();}
+
+function resize(){
+    const rect=canvas.parentElement.getBoundingClientRect();
+    W=canvas.width=rect.width;
+    H=canvas.height=rect.height;
+}
+
+function draw(){
+    // Sky gradient
+    const sky=ctx.createLinearGradient(0,0,0,H*0.55);
+    sky.addColorStop(0,'#1e90ff');
+    sky.addColorStop(1,'#87CEEB');
+    ctx.fillStyle=sky;
+    ctx.fillRect(0,0,W,H*0.55);
+    
+    // Sun with glow
+    ctx.fillStyle='rgba(255,217,61,0.3)';
+    ctx.beginPath();
+    ctx.arc(W*0.85,H*0.12,40,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle='#FFD93D';
+    ctx.beginPath();
+    ctx.arc(W*0.85,H*0.12,25,0,Math.PI*2);
+    ctx.fill();
+    
+    // Clouds
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    [[W*0.12,H*0.1],[W*0.4,H*0.06],[W*0.65,H*0.12]].forEach(([cx,cy])=>{
+        ctx.beginPath();
+        ctx.arc(cx,cy,12,0,Math.PI*2);
+        ctx.arc(cx+18,cy-4,16,0,Math.PI*2);
+        ctx.arc(cx+36,cy,12,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    // Ocean
+    const ocean=ctx.createLinearGradient(0,H*0.55,0,H);
+    ocean.addColorStop(0,'#1976d2');
+    ocean.addColorStop(1,'#0d47a1');
+    ctx.fillStyle=ocean;
+    ctx.fillRect(0,H*0.55,W,H*0.45);
+    
+    // Ocean waves
+    ctx.strokeStyle='rgba(255,255,255,0.15)';
+    ctx.lineWidth=2;
+    for(let y=H*0.58;y<H;y+=12){
+        ctx.beginPath();
+        for(let x=0;x<W;x+=20){
+            ctx.moveTo(x,y);
+            ctx.quadraticCurveTo(x+10,y-3,x+20,y);
+        }
+        ctx.stroke();
+    }
+    
+    // Island
+    ctx.fillStyle='#f4d03f';
+    ctx.beginPath();
+    ctx.ellipse(W*0.78,H*0.58,65,18,0,0,Math.PI*2);
+    ctx.fill();
+    
+    // Palm trees
+    const px1=W*0.72,py1=H*0.45;
+    ctx.fillStyle='#5d4037';
+    ctx.fillRect(px1-2,py1,5,32);
+    ctx.fillStyle='#2e7d32';
+    [[-22,-6],[0,-14],[22,-6]].forEach(([dx,dy])=>{
+        ctx.beginPath();
+        ctx.ellipse(px1+dx,py1+dy,18,5,dx*.02,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    const px2=W*0.82,py2=H*0.47;
+    ctx.fillStyle='#5d4037';
+    ctx.fillRect(px2-2,py2,5,28);
+    ctx.fillStyle='#2e7d32';
+    [[-18,-5],[4,-11],[20,-4]].forEach(([dx,dy])=>{
+        ctx.beginPath();
+        ctx.ellipse(px2+dx,py2+dy,15,4,dx*.02,0,Math.PI*2);
+        ctx.fill();
+    });
+    
+    // Hut
+    ctx.fillStyle='#8d6e63';
+    ctx.fillRect(W*0.75,H*0.52,16,12);
+    ctx.fillStyle='#5d4037';
+    ctx.beginPath();
+    ctx.moveTo(W*0.75-4,H*0.52);
+    ctx.lineTo(W*0.75+8,H*0.46);
+    ctx.lineTo(W*0.75+20,H*0.52);
+    ctx.fill();
+    
+    // Plane
+    if(S.phase!=='idle'){
+        ctx.save();
+        ctx.translate(S.planeX,S.planeY);
+        ctx.rotate(S.planeAngle);
+        
+        // Fuselage
+        ctx.fillStyle='#fff';
+        ctx.beginPath();
+        ctx.ellipse(0,0,40,12,0,0,Math.PI*2);
+        ctx.fill();
+        
+        // Cockpit
+        ctx.fillStyle='#1e88e5';
+        ctx.beginPath();
+        ctx.ellipse(30,-4,8,5,0.2,0,Math.PI*2);
+        ctx.fill();
+        
+        // Windows
+        ctx.fillStyle='#64b5f6';
+        for(let i=-15;i<=15;i+=10){
+            ctx.beginPath();
+            ctx.ellipse(i,-6,4,3,0,0,Math.PI*2);
+            ctx.fill();
+        }
+        
+        // Wings
+        ctx.fillStyle='#e0e0e0';
+        ctx.beginPath();
+        ctx.moveTo(-5,-10);
+        ctx.lineTo(-25,-35);
+        ctx.lineTo(10,-35);
+        ctx.lineTo(8,-10);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-5,10);
+        ctx.lineTo(-25,35);
+        ctx.lineTo(10,35);
+        ctx.lineTo(8,10);
+        ctx.fill();
+        
+        // Tail
+        ctx.fillStyle='#e53935';
+        ctx.beginPath();
+        ctx.moveTo(-38,-5);
+        ctx.lineTo(-50,-25);
+        ctx.lineTo(-35,-5);
+        ctx.fill();
+        
+        // Engines
+        ctx.fillStyle='#757575';
+        ctx.beginPath();
+        ctx.ellipse(-5,18,8,5,0,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(-5,-18,8,5,0,0,Math.PI*2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+function pickChar(){
+    const r=Math.random();
+    let c=0;
+    for(const ch of CHARS){
+        c+=ch.chance;
+        if(r<c)return ch;
+    }
+    return CHARS[0];
+}
+
+function fly(){
+    S.bet=parseInt(E.betInput.value)||0;
+    if(S.bet<10)return alert('Min $10');
+    if(S.bet>S.bankroll)return alert('Not enough');
+    
+    S.bankroll-=S.bet;
+    save();
+    updateUI();
+    E.betDisplay.textContent='$'+S.bet;
+    E.flyBtn.disabled=true;
+    
+    S.phase='flying';
+    S.planeX=-80;
+    S.planeY=H*0.25;
+    S.planeAngle=0.05;
+    S.char=pickChar();
+    E.charReveal.classList.remove('show');
+    E.resultSection.classList.add('hidden');
+    
+    animateFlight();
+}
+
+function animateFlight(){
+    if(S.phase==='flying'){
+        S.planeX+=5;
+        S.planeY+=0.5;
+        
+        if(S.planeX>W*0.55){
+            S.phase='landing';
+        }
+    }else if(S.phase==='landing'){
+        S.planeX+=3;
+        S.planeY+=2;
+        S.planeAngle+=0.01;
+        
+        if(S.planeY>H*0.48){
+            S.phase='landed';
+            setTimeout(showChar,300);
+            draw();
+            return;
+        }
+    }
+    
+    draw();
+    requestAnimationFrame(animateFlight);
+}
+
+function showChar(){
+    // Try to show image, fall back to emoji
+    const cachedImg=imageCache[S.char.name];
+    
+    if(cachedImg&&cachedImg.complete&&cachedImg.naturalWidth>0){
+        E.charImage.src=cachedImg.src;
+        E.charImage.style.display='block';
+        E.charEmoji.style.display='none';
+    }else{
+        E.charImage.style.display='none';
+        E.charEmoji.style.display='block';
+        E.charEmoji.textContent=S.char.emoji;
+    }
+    
+    E.charName.textContent=S.char.name;
+    
+    if(S.char.mult>0){
+        E.charMult.textContent=S.char.mult+'x';
+        E.charMult.className='character-mult win';
+    }else{
+        E.charMult.textContent='STOLEN!';
+        E.charMult.className='character-mult lose';
+    }
+    
+    E.charReveal.classList.add('show');
+    setTimeout(showResult,1800);
+}
+
+function showResult(){
+    if(S.char.mult>0){
+        const win=Math.floor(S.bet*S.char.mult);
+        S.bankroll+=win;
+        E.resultArea.className='result result-win';
+        E.resultArea.textContent='🎉 '+S.char.name+' gave you $'+win+' (+$'+(win-S.bet)+')!';
+        E.lastWin.textContent='+$'+(win-S.bet);
+        E.lastWin.style.color='#4caf50';
+    }else{
+        E.resultArea.className='result result-lose';
+        E.resultArea.textContent='💀 Hillary stole your $'+S.bet+'!';
+        E.lastWin.textContent='-$'+S.bet;
+        E.lastWin.style.color='#e53935';
+    }
+    save();
+    updateUI();
+    E.resultSection.classList.remove('hidden');
+    E.flyBtn.disabled=false;
+}
+
+function reset(){
+    S.phase='idle';
+    E.charReveal.classList.remove('show');
+    E.resultSection.classList.add('hidden');
+    draw();
+}
+
+E.flyBtn.onclick=fly;
+E.againBtn.onclick=reset;
+document.querySelectorAll('.quick-bet').forEach(b=>b.onclick=()=>E.betInput.value=b.dataset.v);
+window.onresize=()=>{resize();draw();};
+
+load();
+updateUI();
+resize();
+draw();
+</script>
+</body>
+</html>
